@@ -21,7 +21,12 @@ When the message only asks you to start, there is nothing to correct: fix = null
 Stay in character and do not make it too easy: react to his tone and to what he actually says. Speak in natural English, 1 to 3 short sentences, using ${seviye}-level words.
 ${ortak()}`;
     return `You are a friendly English conversation partner for Cem, a Turkish adult at ${seviye} level. Topic: ${ayar.konu}. If Cem changes the topic, follow him.
-${ayar.tarz ? `Your personality: ${ayar.tarz} Show it in how you talk, and stay easy to understand.\n` : ""}${ayar.odak ? `Ask questions that make him use this grammar point: ${ayar.odak}. Watch for mistakes in it.\n` : ""}Reply in natural everyday English, 1 to 3 short sentences, and usually end with one question. Use ${seviye}-level words.
+${ayar.tarz ? `Your personality: ${ayar.tarz} Show it in how you talk, and stay easy to understand.\n` : ""}${ayar.odak ? `Ask questions that make him use this grammar point: ${ayar.odak}. Watch for mistakes in it.\n` : ""}Talk like a real friend having a relaxed chat, not like a teacher or an interviewer.
+- First react to what Cem actually said, then add a small thought, opinion or experience of your own (you may invent one).
+- Stay on the current subject and follow it naturally. Never jump to an unrelated subject. Refer back to details he mentioned earlier.
+- Do not end every message with a question: ask in about half of your messages, and never more than one question at a time.
+- Do not praise his English, do not repeat his sentence back, and avoid stock phrases like "That's great!" or "That sounds interesting!".
+- Natural everyday English, 1 to 3 short sentences, ${seviye}-level words.
 ${ortak()}`;
   }
 
@@ -119,6 +124,17 @@ Answer Cem's questions truthfully, using the facts, in 1 or 2 short sentences. G
 "${yazi}"
 baslik = one short encouraging Turkish sentence. duzeltmeler = up to 4 of his most useful real mistakes or unnatural phrases: wrong = his words exactly, right = a more natural version, why = one short simple Turkish explanation, kind = exactly one of: ${TURLER.join(", ")}. words = up to 5 useful words from your corrections, lowercase, with short Turkish meanings.`, DAKIKA_SEMA, 0.4);
 
+  // Takıldım: cevabı hazır vermez, önce ipucu; konuyu değiştirmez, sohbet geçmişine girmez
+  const IPUCU_SEMA = { type: "OBJECT", required: ["ipuclari", "ornek", "ornekTr"], properties: { ipuclari: { type: "ARRAY", items: metin }, ornek: metin, ornekTr: metin } };
+  function ipucuCoz(ham) {
+    const j = JSON.parse(ham), l = (Array.isArray(j.ipuclari) ? j.ipuclari : []).filter(dolu).map(x => x.trim()).slice(0, 2);
+    if (!l.length || !dolu(j.ornek)) throw new Error("eksik ipucu");
+    return { ipuclari: l, ornek: j.ornek.trim(), ornekTr: dolu(j.ornekTr) ? j.ornekTr.trim() : "" };
+  }
+  const ipucuIstegi = gecmis => tekIstek(`Cem, a Turkish ${seviye} English learner, is stuck and does not know how to answer in this chat:
+${gecmis.filter(m => !m.basla).slice(-8).map(m => (m.role === "user" ? "Cem: " : "Other: ") + m.text).join("\n")}
+ipuclari = 2 short hints in Turkish about what he could say next, staying on the current subject. Each may include a useful English word or the first words of a sentence, but not a full answer. ornek = one natural example answer in English at his level. ornekTr = its Turkish translation.`, IPUCU_SEMA, 0.7);
+
   function hata(durum, mesaj) {
     if (durum === 401 || durum === 403 || (durum === 400 && /api.?key/i.test(mesaj || ""))) return "Anahtar kabul edilmedi. Doğru kopyaladığını kontrol et ya da anahtarı değiştir.";
     if (durum === 429) return "Ücretsiz kullanım sınırı şimdilik doldu. Biraz sonra tekrar dene, yazılı duraklar bu arada çalışır.";
@@ -157,6 +173,8 @@ baslik = one short encouraging Turkish sentence. duzeltmeler = up to 4 of his mo
     dosya: anahtar => cagir(anahtar, dosyaIstegi(), dosyaCoz),
     dakika: (anahtar, konu, yazi) => cagir(anahtar, dakikaIstegi(konu, yazi), dakikaCoz),
     iste: (anahtar, gecmis, ayar) => cagir(anahtar, istekGovdesi(gecmis, ayar), coz),
+    ipucuCoz,
+    ipucu: (anahtar, gecmis) => cagir(anahtar, ipucuIstegi(gecmis), ipucuCoz),
     av: (anahtar, tur, ornekler) => cagir(anahtar, avIstegi(tur, ornekler), avCoz),
     karne: (anahtar, ad, gecmis) => cagir(anahtar, karneIstegi(ad, gecmis), karneCoz),
     hikaye: (anahtar, konu) => cagir(anahtar, hikayeIstegi(konu), hikayeCoz),
