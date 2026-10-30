@@ -158,6 +158,25 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .story { font-size: 17px; line-height: 1.6; margin: 0; }
 .back { align-self: flex-start; }
 
+.city-card { display: flex; flex-direction: column; }
+.city-art { display: block; width: 100%; height: auto; border-radius: 16px 16px 0 0; }
+.city-band { height: 64px; border-radius: 16px 16px 0 0; }
+.city-card .ticket { border-radius: 0 0 14px 14px; }
+.region { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; padding: 10px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; width: 100%; }
+.region:last-child { border-bottom: 0; }
+.region b { font-family: var(--f-display); font-size: 16px; display: block; }
+.region small { color: var(--muted); font-size: 13px; }
+.region .label { font-size: 10px; }
+.region .bar { grid-column: 1 / -1; }
+.region.open b { color: var(--stamp-3); }
+.st.tb { color: var(--accent); border-radius: 50%; border-style: double; border-width: 5px; font-size: 13px; transform: rotate(-6deg); }
+.overlay { position: fixed; inset: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 96%, transparent); display: grid; place-items: center; padding: 24px; }
+.overlay-in { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; max-width: 340px; width: 100%; }
+.mega { width: 190px; height: 190px; border-radius: 50%; border: 5px solid var(--st); color: var(--st); display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 30px; line-height: 1.1; position: relative; transform: rotate(-10deg); animation: bas .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.mega::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; border: 2px dashed var(--st); }
+.mega small { display: block; font-family: var(--f-mono); font-size: 12px; font-weight: 500; letter-spacing: .1em; margin-top: 4px; }
+@keyframes bas { from { transform: rotate(-10deg) scale(1.9); opacity: 0; } 70% { transform: rotate(-10deg) scale(.96); opacity: 1; } to { transform: rotate(-10deg) scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .mega { animation: none; } }
 .seg.uc { grid-template-columns: repeat(3, 1fr); }
 .case { background: var(--cover-2); color: var(--cover-ink); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
 .case .label { color: var(--accent); }
@@ -253,10 +272,8 @@ body.has-nav #ses-uyari { bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 .tile.no { border-color: var(--bad); background: var(--bad-bg); }
 .ipa { font-family: var(--f-mono); font-size: 12px; color: var(--muted); display: block; }
 
-.big-stamp { width: 150px; height: 150px; margin: 6px auto; border-radius: 50%; border: 4px solid var(--stamp); color: var(--stamp); display: grid; place-items: center; text-align: center; font-family: var(--f-display); font-weight: 800; line-height: 1.1; transform: rotate(-10deg); position: relative; animation: bas .45s cubic-bezier(.2,1.6,.4,1) both; }
+.big-stamp { width: 150px; height: 150px; margin: 6px auto; border-radius: 50%; border: 4px solid var(--stamp); color: var(--stamp); display: grid; place-items: center; text-align: center; font-family: var(--f-display); font-weight: 800; line-height: 1.1; transform: rotate(-10deg); position: relative; }
 .big-stamp::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; border: 1.5px dashed var(--stamp); }
-@keyframes bas { from { transform: rotate(-10deg) scale(1.6); opacity: 0; } to { transform: rotate(-10deg) scale(1); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .big-stamp { animation: none; } }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
 .stats b { display: block; font-family: var(--f-display); font-size: 26px; font-variant-numeric: tabular-nums; }
 .stats span { font-size: 12px; color: var(--muted); }
@@ -288,6 +305,7 @@ body.has-nav #ses-uyari { bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 <script src="duraklar/4.js"></script>
 <script src="duraklar/5.js"></script>
 <script src="duraklar/sozluk.js"></script>
+<script src="sehirler.js"></script>
 <script src="sohbet.js"></script>
 <script src="defter.js"></script>
 <script>
@@ -540,8 +558,8 @@ SCENES.push(...EK);
 Object.assign(DICT, SOZLUK_EK);
 Object.setPrototypeOf(DICT, null); // sohbette "constructor" gibi bir kelime geçerse sözlükte varmış sanılmasın
 
-const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false });
-const S = Object.assign({ dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
+const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false, final: null, bolum: 0, bolumSent: 0, finalHist: [] });
+const S = Object.assign({ seviye: "B1", finaller: [], damga: null, dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
 const app = document.getElementById("app");
 const tip = document.getElementById("tip");
 const sc = () => SCENES[S.cur];
@@ -563,7 +581,7 @@ function gloss(text) {
 // İlerleme: önce bu cihazda, oturum açıksa hesapta da (telefon ve bilgisayar aynı yeri görür)
 let store = null;
 function save() {
-  const p = { stamped: S.stamped, mode: S.mode };
+  const p = { stamped: S.stamped, mode: S.mode, seviye: S.seviye, finaller: S.finaller };
   try { localStorage.setItem("pasaport", JSON.stringify(p)); } catch (e) {}
   if (store) store.set(p).catch(() => {});
 }
@@ -571,6 +589,8 @@ function apply(p) {
   if (!p) return;
   if (Array.isArray(p.stamped)) S.stamped = p.stamped.filter(i => Number.isInteger(i) && SCENES[i]);
   if (p.mode === "sesli" || p.mode === "sessiz") S.mode = p.mode;
+  if (["A2", "B1", "B2"].includes(p.seviye)) { S.seviye = p.seviye; SOHBET.seviyeAyarla(p.seviye); }
+  if (Array.isArray(p.finaller)) S.finaller = p.finaller.filter(i => BOLGELER[i]);
 }
 try { apply(JSON.parse(localStorage.getItem("pasaport"))); } catch (e) {}
 (async () => {
@@ -601,6 +621,29 @@ function kelimeKaydet(liste) {
     DEFTER.kelimeEkle(DF, en, tr, Date.now());
   });
   dfYaz();
+}
+// Bitirilen durağın kelimeleri tekrar sırasına girer; eski damgalar da bir kez burada toplanır
+const durakKelime = i => kelimeKaydet(SCENES[i].words.map(w => [w[0].toLowerCase(), w[1]]));
+S.stamped.forEach(durakKelime);
+
+// Damga sesi: dosya gerektirmeyen kısa bir vuruş, yalnız sesli modda
+function damgaSesi() {
+  if (quiet()) return;
+  try {
+    const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), v = a.createGain();
+    o.frequency.setValueAtTime(150, a.currentTime); o.frequency.exponentialRampToValueAtTime(55, a.currentTime + .16);
+    v.gain.setValueAtTime(.5, a.currentTime); v.gain.exponentialRampToValueAtTime(.001, a.currentTime + .22);
+    o.connect(v).connect(a.destination); o.start(); o.stop(a.currentTime + .25);
+    o.onended = () => a.close();
+  } catch (e) {}
+}
+function damgaKatman() {
+  const d = S.damga;
+  if (!d) return "";
+  return `<div class="overlay" role="dialog" aria-label="Damga"><div class="overlay-in">
+    <div class="mega" style="--st:var(${d.bolge ? "--accent" : "--stamp-3"})"><span>${esc(d.ust)}<small>${d.bolge ? "BÖLGE TAMAM" : "ONAY"}</small></span></div>
+    <h2 style="font-size:26px;font-weight:800">${esc(d.baslik)}</h2><p class="muted">${esc(d.yazi)}</p>
+    <button class="btn" data-damga-kapa>Devam et</button></div></div>`;
 }
 
 // Ses seçimi: önce şehrin aksanı, sonra aynı aile, sonra herhangi bir İngilizce ses. İngilizce yoksa null.
@@ -712,14 +755,15 @@ function head(step) {
 
 function ticket(i, big) {
   const s = SCENES[i];
-  return `<div class="ticket">
+  const bg = BOLGELER[bolgeOf(s.code)];
+  return `<div class="city-card">${sehirCiz(s.code, s.city) || `<div class="city-band" style="background:linear-gradient(120deg,${bg.g[0]},${bg.g[1]})"></div>`}<div class="ticket">
     <div class="ticket-main">
       <div class="route-line"><b>${s.from}</b><i></i><b>${s.to}</b></div>
       <h2 ${big ? "" : 'style="font-size:24px"'}>${s.title}</h2>
       <p class="muted">${s.desc}</p>
     </div>
     <div class="ticket-stub"><span class="label">Durak ${i + 1}</span><span class="code">${s.code}</span><span class="level">B1</span><span class="label">20 dk</span></div>
-  </div>`;
+  </div></div>`;
 }
 
 function voiceLine() {
@@ -754,7 +798,17 @@ function home() {
     ${enCok ? `<button class="qtile" data-av="${esc(enCok[0])}"><span class="num">${enCok[1]}</span><b>kez ${esc(enCok[0].toLocaleLowerCase("tr"))}</b><span>Hata avına çık</span></button>`
       : `<button class="qtile" data-seg="zor"><span class="num">${ZOR.length}</span><b>zor an seni bekliyor</b><span>Rol yaparak konuş</span></button>`}
   </div>
+  <section class="card"><div class="section-head"><h3>Seviyen</h3><span class="label">Yapay zekâ buna uyar</span></div>
+    <div class="seg uc">${["A2", "B1", "B2"].map(l => `<button data-lvl="${l}" aria-pressed="${S.seviye === l}">${l}</button>`).join("")}</div>
+    <p class="muted">${{ A2: "Kısa ve basit cümleler.", B1: "Günlük konuşma, orta zorluk.", B2: "Daha uzun cümleler, daha zengin kelimeler." }[S.seviye]} Sohbet, oyun ve hikâyeler buna göre yazılır. Yazılı duraklar B1 kalır.</p></section>
+  <section class="card"><div class="section-head"><h3>Bölgeler</h3><span class="label">Finale ilerle</span></div>
+    <div>${BOLGELER.map((b, i) => {
+      const yerler = b.kodlar.map(k => SCENES.findIndex(s => s.code === k)), biten = yerler.filter(y => S.stamped.includes(y)).length, tamam = biten === yerler.length;
+      const sira = yerler.filter(y => !S.stamped.includes(y)).sort((x, y) => x - y)[0];
+      return `<button class="region ${tamam ? "open" : ""}" ${tamam ? `data-final="${i}"` : `data-start="${sira}"`}><span><b>${b.ad}</b><small>${tamam ? (S.finaller.includes(i) ? "Final bitti, tekrar oyna" : "Final açıldı: " + b.final.baslik) : "Devam: " + SCENES[sira].city}</small></span><span class="label">${biten} / ${yerler.length}</span><div class="bar"><i style="width:${biten / yerler.length * 100}%"></i></div></button>`;
+    }).join("")}</div></section>
   <section class="page"><div class="section-head"><h3>Damgaların</h3><span class="label">${adet} şehir</span></div>
+    ${S.finaller.length ? `<div class="stamps">${S.finaller.map(i => `<button class="st tb" data-final="${i}" aria-label="${BOLGELER[i].ad} finalini tekrar oyna"><span>${BOLGELER[i].kod}<small>BÖLGE</small></span></button>`).join("")}</div>` : ""}
     ${damgalar ? `<div class="stamps">${damgalar}</div><p class="muted">Bir damgaya dokunup o durağı tekrar oynayabilirsin. Durak bitince sıradaki hemen açılır.</p>` : `<p class="muted">İlk durağı bitirince ilk damgan burada çıkacak.</p>`}
   </section>
   ${tamEkran ? "" : `<section class="card"><span class="label">Telefonda uygulama gibi</span><h3 style="font-size:20px">Ana ekrana ekle</h3>
@@ -875,7 +929,10 @@ const ZOR = [
   { t: "Toplantıda itiraz", d: "Fikrine karşı çıkanlara cevap ver", h: 3, who: "İş arkadaşı", k: "You are a colleague in a meeting who disagrees with Cem's idea and interrupts. Respect him only if he disagrees clearly and politely." },
 ];
 const backBtn = `<button class="chip" data-go="konus">← Konuş</button>`;
-const ayar = () => S.det ? { karakter: SOHBET.tanik(S.det) } : S.zor !== null ? { karakter: ZOR[S.zor].k } : { konu: S.topic, odak: S.odak };
+const FINAL_MESAJ = 4; // her final bölümünde kullanıcı mesajı
+const finalBolum = () => BOLGELER[S.final].final.bolumler[S.bolum];
+const karneli = () => S.zor !== null || S.final !== null;
+const ayar = () => S.final !== null ? { karakter: finalBolum().k } : S.det ? { karakter: SOHBET.tanik(S.det) } : S.zor !== null ? { karakter: ZOR[S.zor].k } : { konu: S.topic, odak: S.odak };
 const DET_SORU = 10;
 const DK_KONU = ["Sana en çok zaman kazandıran alışkanlık", "Çocukluğundan unutamadığın bir gün", "Şehrinde en sevdiğin yer", "Yakın zamanda seni güldüren bir şey", "Bir milyon doların olsa ne yapardın", "En son izlediğin film ya da dizi", "İşinin en zor tarafı", "Hayalindeki tatil", "En sevdiğin yemek ve nasıl yapıldığı", "Daha iyi yapmak istediğin bir şey", "Hayatını kolaylaştıran bir teknoloji", "Sana bir şey öğreten bir hata"];
 const yeniKonu = eski => { const l = DK_KONU.filter(k => k !== eski); return l[Math.floor(Math.random() * l.length)]; };
@@ -943,7 +1000,7 @@ function yedekKart() {
   const r = S.yedekSonuc;
   return `<section class="card"><span class="label">Yedek ve aktarma</span><h3 style="font-size:20px">Damgaların ve Defter'in güvende kalsın</h3>
     <div class="two"><button class="btn ghost" data-yedek="al">Yedek kodu al</button><button class="btn ghost" data-yedek="yukle">Kodu yapıştır</button></div>
-    ${S.yedek === "al" ? `<textarea id="yedek-kod" readonly aria-label="Yedek kodun">${esc(DEFTER.kodla(DF, S.stamped))}</textarea><button class="chip back" data-yedek-kopya>Kopyala</button>
+    ${S.yedek === "al" ? `<textarea id="yedek-kod" readonly aria-label="Yedek kodun">${esc(DEFTER.kodla(DF, S.stamped, S.finaller))}</textarea><button class="chip back" data-yedek-kopya>Kopyala</button>
       <p class="muted">Kodu kendine e-posta at ya da bir nota kaydet. Damgaların, kelimelerin ve düzeltmelerin içindedir. Ücretsiz anahtarın ve hikâyelerin koda girmez.</p>` : ""}
     ${S.yedek === "yukle" ? `<textarea id="yedek-gir" aria-label="Yedek kodu" placeholder="Kodu buraya yapıştır"></textarea><button class="btn" data-yedek-aktar>Bu cihaza aktar</button>
       <p class="muted">Bu cihazdaki kayıtların silinmez, ikisi birleşir.</p>` : ""}
@@ -954,6 +1011,8 @@ function yedekAktar() {
     const g = DEFTER.kodCoz(document.getElementById("yedek-gir").value);
     const yeniDamga = [...new Set(g.damgalar)].filter(i => SCENES[i] && !S.stamped.includes(i));
     S.stamped.push(...yeniDamga);
+    S.finaller.push(...[...new Set(g.finaller)].filter(i => BOLGELER[i] && !S.finaller.includes(i)));
+    S.stamped.forEach(durakKelime);
     const r = DEFTER.birlestir(DF, g.defter);
     Object.entries(DF.words).forEach(([en, w]) => { if (!DICT[en]) DICT[en] = w.tr; });
     dfYaz(); save();
@@ -1174,7 +1233,7 @@ function sohbet() {
   const bubbles = S.chat.map((m, i) => {
     if (m.fix) return `<div class="fix-line"><div class="fix"><s>${esc(m.fix.wrong)}</s><b>${gloss(m.fix.right)}</b>${m.fix.why ? `<small>${esc(m.fix.why)}</small>` : ""}</div></div>`;
     if (m.you) return `<div class="msg you"><div class="who">Sen</div>${gloss(m.t)}</div>`;
-    return `<div class="msg them"><div class="who">${S.det ? "Tanık" : S.zor !== null ? ZOR[S.zor].who : "Sohbet arkadaşın"}</div>${gloss(m.t)}
+    return `<div class="msg them"><div class="who">${m.who || (S.det ? "Tanık" : S.zor !== null ? ZOR[S.zor].who : "Sohbet arkadaşın")}</div>${gloss(m.t)}
       <div class="msg-tools">${quiet() ? "" : `<button class="chip" data-say="${i}">${ICON.play} Dinle</button>`}${m.tr ? `<button class="chip" data-tr="${i}">Türkçesi</button>` : ""}</div>
       ${S.tr[i] ? `<div class="tr">${esc(m.tr)}</div>` : ""}</div>`;
   }).join("");
@@ -1182,11 +1241,12 @@ function sohbet() {
     ? `<div class="mic-row"><button class="mic listening" aria-label="Dinliyor">${ICON.mic}</button><p><b>Dinliyorum…</b> Şimdi söyle.</p></div>`
     : `<div class="mic-row"><button class="mic" data-free-mic aria-label="Konuşmak için bas">${ICON.mic}</button><p>${S.noMic || !SR ? "Bu ekranda mikrofon açılamıyor, yazarak devam et." : "Bas ve söyle ya da aşağıya yaz."}</p></div>`;
   return `<div class="top">${backBtn}<button class="chip" data-mode="${quiet() ? "sesli" : "sessiz"}">${quiet() ? ICON.mute + " Sessiz" : ICON.sound + " Sesli"}</button></div>
-    <div class="scene-head"><h3>${esc(S.det ? S.det.baslik : S.topic)}</h3>${S.detWait || S.det ? `<span class="label">${S.sent} / ${DET_SORU} soru</span>` : `<button class="chip" data-go="sohbetSon">${S.zor !== null && S.sent ? "Karneyi gör" : "Sohbeti bitir"}</button>`}</div>
+    <div class="scene-head"><h3>${esc(S.det ? S.det.baslik : S.topic)}</h3>${S.final !== null ? `<span class="label">Bölüm ${S.bolum + 1} / 3</span>` : S.detWait || S.det ? `<span class="label">${S.sent} / ${DET_SORU} soru</span>` : `<button class="chip" data-go="sohbetSon">${S.zor !== null && S.sent ? "Karneyi gör" : "Sohbeti bitir"}</button>`}</div>
     ${S.det ? `<section class="case"><span class="label">Dosya</span><p>${gloss(S.det.olay)}</p>${S.det.olayTr ? `<button class="chip" data-det-tr>Türkçesi</button>${S.detTr ? `<p class="tr" style="color:inherit">${esc(S.det.olayTr)}</p>` : ""}` : ""}</section>` : ""}
     <div class="chat" id="chat">${bubbles}${S.busy ? `<div class="typing">${S.detWait ? "Dosya hazırlanıyor…" : "yazıyor…"}</div>` : ""}</div>
-    ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${!S.chat.length ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
-    ${S.detWait ? "" : S.det && S.sent >= DET_SORU ? `<p class="muted">Soru hakkın bitti, kararını ver.</p>` : `<div class="dock">${mic}
+    ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${S.detWait || (S.hist.length === 1 && !S.det) ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
+    ${S.final !== null && S.bolumSent >= FINAL_MESAJ ? (S.busy ? "" : S.bolum < 2 ? `<button class="btn" data-final-next>Sonraki bölüm: ${esc(BOLGELER[S.final].final.bolumler[S.bolum + 1].who)}</button>` : `<button class="btn" data-go="sohbetSon">Finali bitir ve karneni gör</button>`)
+      : S.detWait ? "" : S.det && S.sent >= DET_SORU ? `<p class="muted">Soru hakkın bitti, kararını ver.</p>` : `<div class="dock">${mic}
       <form class="compose" id="serbest-form"><input id="serbest" autocomplete="off" autocapitalize="sentences" aria-label="Mesajın" placeholder="${S.det ? "Ask a question…" : "Type your message…"}" value="${esc(S.draft)}"><button type="submit">Gönder</button></form>
     </div>`}
     ${S.det ? `<div class="card"><span class="label">Çözdüm: suçlu kim?</span><div class="hints">${S.det.supheliler.map((n, i) => `<button class="chip" data-verdict="${i}" ${S.busy ? "disabled" : ""}>${gloss(n)}</button>`).join("")}</div></div>` : ""}`;
@@ -1197,21 +1257,23 @@ function sohbetSon() {
     : `<p style="margin:0">Düzeltilecek bir şey çıkmadı.</p>`;
   const yeni = S.newWords.slice(0, 12);
   const k = S.karne;
-  const karne = S.zor === null || !S.sent ? "" : k && k.err ? kartHata(k.err, "data-karne-retry")
+  const karne = !karneli() || !S.sent ? "" : k && k.err ? kartHata(k.err, "data-karne-retry")
     : !k ? `<div class="card"><span class="label">Karne · ${esc(S.topic)}</span><p class="typing" style="margin:0">Karnen hazırlanıyor…</p></div>`
     : `<section class="card"><span class="label">Karne · ${esc(S.topic)}</span><h2 style="font-size:26px;font-weight:800">${esc(k.baslik)}</h2>
         <div class="scores">${[["Netlik", k.netlik], ["Kibarlık", k.kibarlik], ["Dil bilgisi", k.dil]].map(([n, v]) => `<div class="score"><span>${n}</span><div class="bar"><i style="width:${v}%"></i></div><b>${v}</b></div>`).join("")}</div>
         ${k.yorum ? `<p style="margin:0">${esc(k.yorum)}</p>` : ""}<p class="muted">Puanlar yapay zekânın tahminidir.</p></section>`;
   return `${karne}<div class="card"><span class="label">Sohbet bitti · ${S.sent} mesaj</span><h3 style="font-size:22px">${S.fixes.length ? "Düzeltmelerin" : "Sohbetin özeti"}</h3>${fixes}${S.fixes.length ? `<p class="muted">Bunlar Defter'e eklendi.</p>` : ""}</div>
     ${yeni.length ? `<div class="card"><span class="label">Defter'e eklenen yeni kelimeler</span><div class="new-words">${yeni.map(([en, tr]) => `<b>${esc(en)}</b><span>${esc(tr)}</span>`).join("")}</div></div>` : ""}
-    ${S.zor !== null ? `<button class="btn" data-zor="${S.zor}">Tekrar dene</button>` : ""}
-    <button class="btn ${S.zor !== null ? "ghost" : ""}" data-go="konus">Yeni sohbet</button>`;
+    ${S.final !== null ? `<button class="btn" data-final="${S.final}">Finali tekrar oyna</button>` : S.zor !== null ? `<button class="btn" data-zor="${S.zor}">Tekrar dene</button>` : ""}
+    <button class="btn ${karneli() ? "ghost" : ""}" data-go="${S.final !== null ? "home" : "konus"}">${S.final !== null ? "Rotaya dön" : "Yeni sohbet"}</button>`;
 }
 async function karneIste() {
   const id = ++serbestRun;
   S.karne = null; render();
   try {
-    const k = await SOHBET.karne(anahtar(), ZOR[S.zor].t, S.hist);
+    // Final üç bölümdür: bölüm başlatma cümleleri Cem'in sözü değildir, karneye girmez
+    const gecmis = S.final !== null ? [{}, ...[...S.finalHist, ...S.hist].filter(m => !m.basla)] : S.hist;
+    const k = await SOHBET.karne(anahtar(), S.final !== null ? BOLGELER[S.final].final.baslik : ZOR[S.zor].t, gecmis);
     if (id !== serbestRun || S.screen !== "sohbetSon") return;
     S.karne = k; render();
   } catch (e) {
@@ -1233,23 +1295,24 @@ async function serbestIste() {
       DEFTER.hataEkle(DF, c.fix); dfYaz();
     }
     S.hist.push({ role: "model", text: c.reply });
-    S.chat.push({ t: c.reply, tr: c.tr });
+    S.chat.push({ t: c.reply, tr: c.tr, who: S.final !== null ? finalBolum().who : "" });
     S.busy = false; render(); speak(c.reply);
   } catch (e) {
     if (id !== serbestRun || S.screen !== "sohbet") return;
     Object.assign(S, { busy: false, err: e.message });
     // Gönderilemeyen mesaj kaybolmasın, yazı kutusuna geri döner
-    if (S.hist.length > 1 || S.det) { S.draft = S.hist.pop().text; S.chat.pop(); S.sent--; }
+    if (S.hist.length > 1 || S.det) { S.draft = S.hist.pop().text; S.chat.pop(); S.sent--; if (S.final !== null) S.bolumSent--; }
     render();
   }
 }
 function serbestBasla(topic, ek) {
-  Object.assign(S, fresh(), { screen: "sohbet", topic, hist: [{ role: "user", text: ek && ek.zor !== undefined ? "Start the scene with your first line." : "Start the chat with one short question." }] }, ek);
+  Object.assign(S, fresh(), { screen: "sohbet", topic, hist: [{ role: "user", basla: true, text: ek && (ek.zor !== undefined || ek.final !== undefined) ? "Start the scene with your first line." : "Start the chat with one short question." }] }, ek);
   window.scrollTo({ top: 0 });
   serbestIste();
 }
 function serbestGonder(t) {
-  if (S.busy || !t.trim() || (S.det && S.sent >= DET_SORU)) return;
+  if (S.busy || !t.trim() || (S.det && S.sent >= DET_SORU) || (S.final !== null && S.bolumSent >= FINAL_MESAJ)) return;
+  if (S.final !== null) S.bolumSent++;
   t = t.trim();
   if (!S.sent) { DF.chats++; dfYaz(); }
   S.chat.push({ you: true, t }); S.hist.push({ role: "user", text: t }); S.sent++; S.draft = "";
@@ -1283,7 +1346,7 @@ const NAV_SEKME = { home: "home", konus: "konus", sohbetSon: "konus", detSon: "k
 const nav = document.getElementById("nav");
 function render() {
   hideTip();
-  app.innerHTML = SCREENS[S.screen]();
+  app.innerHTML = SCREENS[S.screen]() + damgaKatman();
   const sekme = S.screen === "dakika" && S.dk.hal === "akis" ? null : NAV_SEKME[S.screen]; // süre işlerken menüyle çıkılmasın
   nav.hidden = !sekme;
   document.body.classList.toggle("has-nav", !!sekme);
@@ -1341,13 +1404,34 @@ app.addEventListener("click", e => {
   if (d.mode) { S.mode = d.mode; S.tokens = []; S.built = []; if (S.screen === "ear") { S.earPick = null; S.order = []; } try { speechSynthesis.cancel(); } catch (x) {} save(); return render(); }
   if (d.start) { Object.assign(S, fresh(), { cur: +d.start, screen: "talk" }); window.scrollTo({ top: 0 }); return addThem(sc().dialog[0]); }
   if (d.go) {
-    if (d.go === "finish" && !S.stamped.includes(S.cur)) { S.stamped.push(S.cur); save(); }
+    if (d.go === "finish") {
+      if (!S.stamped.includes(S.cur)) { S.stamped.push(S.cur); save(); }
+      durakKelime(S.cur);
+      S.damga = { ust: s.code, baslik: s.city + " tamam.", yazi: `Bu durağın ${s.words.length} kelimesi Defter'e eklendi, tekrar sırana girdi.` };
+      damgaSesi();
+    }
+    if (d.go === "sohbetSon" && S.final !== null && S.bolum === 2 && S.bolumSent >= FINAL_MESAJ) {
+      if (!S.finaller.includes(S.final)) { S.finaller.push(S.final); save(); }
+      S.damga = { bolge: true, ust: BOLGELER[S.final].kod, baslik: BOLGELER[S.final].ad + " bitti.", yazi: "Bölge damgası pasaportuna basıldı. Karnen hazırlanıyor." };
+      damgaSesi();
+    }
     if (d.go !== S.screen && (d.go === "ear" || d.go === "words")) S.order = [];
     if (d.go === "sohbetSon" || d.go === "dinle") { try { speechSynthesis.cancel(); } catch (x) {} }
     if (d.go === "dakika") S.dk = { hal: "bos" };
     S.screen = d.go; render(); window.scrollTo({ top: 0 }); if (d.go === "ear") speak(s.ear[0].say);
-    if (d.go === "sohbetSon" && S.zor !== null && S.sent && !S.karne) karneIste();
+    if (d.go === "sohbetSon" && karneli() && S.sent && !S.karne) karneIste();
     return;
+  }
+  if ("damgaKapa" in d) { S.damga = null; return render(); }
+  if (d.lvl) { S.seviye = d.lvl; SOHBET.seviyeAyarla(d.lvl); save(); return render(); }
+  if (d.final) {
+    if (!anahtar()) { S.screen = "konus"; return render(); }
+    return serbestBasla(BOLGELER[+d.final].final.baslik, { final: +d.final, bolum: 0, bolumSent: 0, finalHist: [] });
+  }
+  if ("finalNext" in d) {
+    S.finalHist.push(...S.hist);
+    Object.assign(S, { hist: [{ role: "user", basla: true, text: "Start the scene with your first line." }], bolum: S.bolum + 1, bolumSent: 0 });
+    return serbestIste();
   }
   if ("detNew" in d) {
     if (!anahtar()) { S.screen = "konus"; return render(); }
