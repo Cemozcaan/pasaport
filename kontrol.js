@@ -75,4 +75,20 @@ assert.ok(/Anahtar/.test(SOHBET.hata(403, "")));
 assert.ok(/sınır/.test(SOHBET.hata(429, "")));
 assert.ok(/yoğun/.test(SOHBET.hata(503, "")));
 
-console.log(`Tamam:${SCENES.length} durak, ${Object.keys(DICT).length} kelime.`);
+// Yedek model: 429'da ikincisine geçer, anahtar hatasında geçmez
+(async () => {
+  const dene = async durumlar => {
+    let adet = 0;
+    ctx.AbortSignal = AbortSignal;
+    ctx.fetch = async () => { const d = durumlar[adet++]; return { ok: d === 200, status: d, json: async () => d === 200 ? { candidates: [{ content: { parts: [{ text: '{"reply":"Hi"}' }] } }] } : { error: { message: "API key not valid" } } }; };
+    const r = await SOHBET.iste("k", [{ role: "user", text: "x" }], "t").catch(e => e.message);
+    return { adet, r };
+  };
+  const a = await dene([429, 200]);
+  assert.strictEqual(a.adet, 2); assert.strictEqual(a.r.reply, "Hi");
+  const b = await dene([400]);
+  assert.strictEqual(b.adet, 1); assert.ok(/Anahtar/.test(b.r));
+  const c = await dene([429, 429]);
+  assert.strictEqual(c.adet, 2); assert.ok(/sınır/.test(c.r));
+  console.log(`Tamam: ${SCENES.length} durak, ${Object.keys(DICT).length} kelime.`);
+})().catch(e => { console.error(e); process.exit(1); });
