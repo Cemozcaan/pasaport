@@ -174,11 +174,8 @@ assert.strictEqual(DEFTER.kodCoz(DEFTER.kodla(gc, [], [])).defter.sohbetler.leng
 // Sohbet karakteri talimata girer
 assert.ok(/personality: ciddi/.test(SOHBET.istekGovdesi(uzun, { konu: "x", tarz: "ciddi" }).systemInstruction.parts[0].text));
 assert.ok(!/personality/.test(SOHBET.istekGovdesi(uzun, { konu: "x" }).systemInstruction.parts[0].text));
-// Defter sohbete girer: hedef kelimeler talimatta, kullanılanlar çözülür
-assert.ok(/reviewing these words: refund, delay/.test(SOHBET.istekGovdesi(uzun, { konu: "x", hedef: ["refund", "delay"] }).systemInstruction.parts[0].text));
-assert.ok(!/reviewing/.test(SOHBET.istekGovdesi(uzun, { konu: "x", hedef: [] }).systemInstruction.parts[0].text));
-assert.strictEqual(SOHBET.coz(JSON.stringify({ reply: "Hi", used: ["refund", 5, ""] })).used.join(), "refund");
-assert.strictEqual(SOHBET.coz(JSON.stringify({ reply: "Hi" })).used.length, 0);
+// Sohbet doğal kalsın: Defter kelimeleri talimata girmez (Cem konuyu saptırdığı için kaldırttı)
+assert.ok(!/reviewing|used =/.test(SOHBET.istekGovdesi(uzun, { konu: "x", hedef: ["refund"] }).systemInstruction.parts[0].text));
 // Sık kalıplar: en az 50, tekrarsız, Türkçeli
 const KL = vm.runInContext("KALIPLAR", ctx), klHepsi = KL.flatMap(k => k.l);
 assert.ok(klHepsi.length >= 50, "en az 50 kalıp");
