@@ -174,6 +174,29 @@ assert.strictEqual(DEFTER.kodCoz(DEFTER.kodla(gc, [], [])).defter.sohbetler.leng
 // Sohbet karakteri talimata girer
 assert.ok(/personality: ciddi/.test(SOHBET.istekGovdesi(uzun, { konu: "x", tarz: "ciddi" }).systemInstruction.parts[0].text));
 assert.ok(!/personality/.test(SOHBET.istekGovdesi(uzun, { konu: "x" }).systemInstruction.parts[0].text));
+// Doğal sohbet talimatı: arkadaş gibi, konudan sapmadan
+const dogal = SOHBET.istekGovdesi(uzun, { konu: "x" }).systemInstruction.parts[0].text;
+assert.ok(/Never jump to an unrelated subject/.test(dogal) && /Do not end every message with a question/.test(dogal));
+// Takıldım: ipucu çözümü, eksikse hata
+const ip = SOHBET.ipucuCoz(JSON.stringify({ ipuclari: ["a", "b", "c", 5], ornek: "x", ornekTr: "y" }));
+assert.strictEqual(ip.ipuclari.length, 2); assert.strictEqual(ip.ornek, "x");
+assert.throws(() => SOHBET.ipucuCoz(JSON.stringify({ ipuclari: [], ornek: "x" })));
+assert.throws(() => SOHBET.ipucuCoz(JSON.stringify({ ipuclari: ["a"] })));
+// Defter düzenleme: silinen kelime kendiliğinden dönmez, "biliyorum" sıradan çıkar, bozuk anlam yazılmaz
+const dz = DEFTER.bos();
+DEFTER.kelimeEkle(dz, "a", "1", 0); DEFTER.kelimeEkle(dz, "b", "2", 0);
+DEFTER.kelimeSil(dz, "a"); DEFTER.kelimeEkle(dz, "a", "1", 0);
+assert.strictEqual(dz.words.a, undefined);
+DEFTER.kelimeGeriAl(dz, "a"); DEFTER.kelimeEkle(dz, "a", "1", 0); assert.strictEqual(dz.words.a.tr, "1");
+DEFTER.kelimeBildi(dz, "b", true);
+assert.strictEqual(DEFTER.bekleyen(dz, 5).join(), "a"); assert.strictEqual(DEFTER.tekrarListesi(dz, 5, 9).join(), "a");
+DEFTER.kelimeBildi(dz, "b", false); assert.strictEqual(DEFTER.bekleyen(dz, 5).length, 2);
+DEFTER.kelimeAnlam(dz, "a", "  "); assert.strictEqual(dz.words.a.tr, "1"); DEFTER.kelimeAnlam(dz, "a", " yeni "); assert.strictEqual(dz.words.a.tr, "yeni");
+const dz2 = DEFTER.yukle(JSON.parse(JSON.stringify({ ...dz, words: { ...dz.words, c: { tr: "x", bildi: true } }, silinen: ["q", 5] })));
+assert.strictEqual(dz2.words.c.bildi, true); assert.strictEqual(dz2.silinen.join(), "q");
+const dz3 = DEFTER.bos(); DEFTER.kelimeSil(dz3, "a"); assert.strictEqual(DEFTER.birlestir(dz3, dz).kelime, 1); assert.strictEqual(dz3.words.a, undefined); // silinen yedekten de dönmez
+const sc = DEFTER.bos(); DEFTER.sohbetKaydet(sc, { id: 1, topic: "t", chat: [], hist: [] }); DEFTER.sohbetKaydet(sc, { id: 2, topic: "t", chat: [], hist: [] });
+DEFTER.sohbetSil(sc, 1); assert.strictEqual(sc.sohbetler.length, 1); assert.strictEqual(sc.sohbetler[0].id, 2);
 // Sohbet doğal kalsın: Defter kelimeleri talimata girmez (Cem konuyu saptırdığı için kaldırttı)
 assert.ok(!/reviewing|used =/.test(SOHBET.istekGovdesi(uzun, { konu: "x", hedef: ["refund"] }).systemInstruction.parts[0].text));
 // Sık kalıplar: en az 50, tekrarsız, Türkçeli
@@ -196,7 +219,7 @@ assert.strictEqual(hepsiBolge.length, SCENES.length);
 BG.forEach(b => { assert.strictEqual(b.final.bolumler.length, 3, b.ad); b.final.bolumler.forEach(p => assert.ok(p.who && p.k)); });
 // Çizimler: var olan şehirde SVG, olmayanda boş döner
 const ciz = vm.runInContext("sehirCiz", ctx);
-["LON", "NYC", "SYD", "SFO", "CPT", "HNL", "DUB", "TOR", "EDI", "LAX", "CHI", "BOS", "MEL", "GLA", "YVR", "AKL"].forEach(k => assert.ok(ciz(k, "ad").startsWith("<svg") && !/NaN|undefined/.test(ciz(k, "ad")), k));
+SCENES.map(s => s.code).forEach(k => assert.ok(ciz(k, "ad").startsWith("<svg") && !/NaN|undefined/.test(ciz(k, "ad")), k));
 assert.strictEqual(ciz("YOK", "ad"), "");
 // Yedek model: 429'da ikincisine geçer, anahtar hatasında geçmez
 (async () => {
