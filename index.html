@@ -158,6 +158,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .story { font-size: 17px; line-height: 1.6; margin: 0; }
 .back { align-self: flex-start; }
 
+.seg.uc { grid-template-columns: repeat(3, 1fr); }
+.case { background: var(--cover-2); color: var(--cover-ink); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+.case .label { color: var(--accent); }
+.case h2 { font-size: 26px; font-weight: 800; line-height: 1.1; }
+.case p { margin: 0; }
+.case .chip { border-color: rgb(242 239 224 / .4); align-self: flex-start; }
+.timer { font-family: var(--f-display); font-weight: 800; font-size: 72px; line-height: 1; font-variant-numeric: tabular-nums; text-align: center; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.two > div { background: var(--paper-2); border-radius: 10px; padding: 10px 12px; }
+.two b { display: block; font-family: var(--f-display); font-size: 24px; font-variant-numeric: tabular-nums; }
+.two span { font-size: 13px; color: var(--muted); }
+.two .btn { font-size: 15px; padding: 12px 8px; }
+.card textarea { width: 100%; min-height: 96px; border: 1.5px solid var(--line); background: var(--paper-2); border-radius: 12px; padding: 12px; font-family: var(--f-mono); font-size: 12px; color: inherit; resize: vertical; overflow-wrap: anywhere; }
+.closed { align-self: flex-start; font-family: var(--f-display); font-weight: 800; color: var(--stamp); border: 2.5px solid currentColor; border-radius: 8px; padding: 4px 10px; transform: rotate(-4deg); }
+.ok-note { background: var(--good-bg); border: 1.5px solid var(--good); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+
 nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--paper); border-top: 1px solid var(--line); padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
 #nav-ic { max-width: 430px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
 nav button { border: 0; background: transparent; border-radius: 10px; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 12px; color: var(--muted); }
@@ -524,8 +540,8 @@ SCENES.push(...EK);
 Object.assign(DICT, SOZLUK_EK);
 Object.setPrototypeOf(DICT, null); // sohbette "constructor" gibi bir kelime geçerse sözlükte varmış sanılmasın
 
-const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null });
-const S = Object.assign({ screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
+const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false });
+const S = Object.assign({ dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
 const app = document.getElementById("app");
 const tip = document.getElementById("tip");
 const sc = () => SCENES[S.cur];
@@ -859,7 +875,10 @@ const ZOR = [
   { t: "Toplantıda itiraz", d: "Fikrine karşı çıkanlara cevap ver", h: 3, who: "İş arkadaşı", k: "You are a colleague in a meeting who disagrees with Cem's idea and interrupts. Respect him only if he disagrees clearly and politely." },
 ];
 const backBtn = `<button class="chip" data-go="konus">← Konuş</button>`;
-const ayar = () => S.zor !== null ? { karakter: ZOR[S.zor].k } : { konu: S.topic, odak: S.odak };
+const ayar = () => S.det ? { karakter: SOHBET.tanik(S.det) } : S.zor !== null ? { karakter: ZOR[S.zor].k } : { konu: S.topic, odak: S.odak };
+const DET_SORU = 10;
+const DK_KONU = ["Sana en çok zaman kazandıran alışkanlık", "Çocukluğundan unutamadığın bir gün", "Şehrinde en sevdiğin yer", "Yakın zamanda seni güldüren bir şey", "Bir milyon doların olsa ne yapardın", "En son izlediğin film ya da dizi", "İşinin en zor tarafı", "Hayalindeki tatil", "En sevdiğin yemek ve nasıl yapıldığı", "Daha iyi yapmak istediğin bir şey", "Hayatını kolaylaştıran bir teknoloji", "Sana bir şey öğreten bir hata"];
+const yeniKonu = eski => { const l = DK_KONU.filter(k => k !== eski); return l[Math.floor(Math.random() * l.length)]; };
 const kartHata = (metin, nitelik) => `<div class="err" role="alert">${esc(metin)}</div><button class="btn" ${nitelik}>Tekrar dene</button>${/Anahtar/.test(metin) ? `<button class="chip back" data-key-del>Anahtarı değiştir</button>` : ""}`;
 
 function keyScreen() {
@@ -880,8 +899,10 @@ function konus() {
   if (!anahtar()) return baslik + keyScreen();
   const zor = S.seg === "zor";
   return `${baslik}
-    <div class="seg"><button data-seg="serbest" aria-pressed="${!zor}">Serbest sohbet</button><button data-seg="zor" aria-pressed="${zor}">Zor anlar</button></div>
-    ${zor ? ZOR.map((z, i) => `<button class="hard" data-zor="${i}"><span><b>${z.t}</b><small>${z.d}</small></span>
+    <div class="seg uc"><button data-seg="serbest" aria-pressed="${S.seg === "serbest"}">Serbest</button><button data-seg="zor" aria-pressed="${zor}">Zor anlar</button><button data-seg="oyun" aria-pressed="${S.seg === "oyun"}">Oyunlar</button></div>
+    ${S.seg === "oyun" ? `<button class="hard" data-det-new><span><b>Dedektif</b><small>Sorular sorarak gizemi çöz. Sessiz modda da oynanır.</small></span><span class="label">Oyna</span></button>
+      <button class="hard" data-go="dakika"><span><b>Kesintisiz bir dakika</b><small>Bir konuda 60 saniye durmadan konuş. Mikrofon gerekir.</small></span><span class="label">Başla</span></button>`
+    : zor ? ZOR.map((z, i) => `<button class="hard" data-zor="${i}"><span><b>${z.t}</b><small>${z.d}</small></span>
         <span class="ticks" role="img" aria-label="Zorluk ${z.h} / 3">${[1, 2, 3].map(n => `<i class="${n <= z.h ? "on" : ""}"></i>`).join("")}</span></button>`).join("")
       + `<p class="muted">Yapay zekâ karaktere bürünür, cevabına göre tepki verir. Bitirince kısa bir karne alırsın.</p>`
     : `<div class="card"><h3 style="font-size:20px">Bugün ne konuşalım?</h3>
@@ -893,7 +914,7 @@ function konus() {
 function defter() {
   const toplam = Object.keys(DF.words).length, harita = DEFTER.hataHaritasi(DF);
   const baslik = `<div class="hub-title"><span class="label">Defter · bu cihazda</span><h2>Sohbetlerinden kalanlar</h2></div>`;
-  if (!toplam && !DF.fixes.length) return `${baslik}<div class="card"><h3 style="font-size:20px">Defterin henüz boş</h3><p class="muted">Sohbet ettikçe ve hikâye okudukça yeni kelimelerin ve düzeltmelerin burada birikir.</p><button class="btn" data-go="konus">Sohbete başla</button></div>`;
+  if (!toplam && !DF.fixes.length) return `${baslik}<div class="card"><h3 style="font-size:20px">Defterin henüz boş</h3><p class="muted">Sohbet ettikçe ve hikâye okudukça yeni kelimelerin ve düzeltmelerin burada birikir.</p><button class="btn" data-go="konus">Sohbete başla</button></div>${yedekKart()}`;
   let tekrar = "";
   if (toplam) {
     if (!S.dq) dqBasla();
@@ -915,7 +936,142 @@ function defter() {
       <button class="btn" data-av="${esc(harita[0][0])}">Hata avına çık: ${esc(harita[0][0].toLocaleLowerCase("tr"))}</button></section>` : ""}
     ${sonlar.length ? `<section class="card"><h3 style="font-size:20px">Son düzeltmelerin</h3>${sonlar.map(f => `<div class="fix"><s>${esc(f.wrong)}</s><b>${gloss(f.right)}</b>${f.why ? `<small>${esc(f.why)}</small>` : ""}</div>`).join("")}</section>` : ""}
     ${toplam ? `<section class="card"><div class="section-head"><h3>Kelimelerin</h3><span class="label">${toplam} kelime</span></div>
-      <div class="hints">${hepsi.slice(0, 40).map(w => `<span class="chip">${gloss(w)}</span>`).join("")}</div></section>` : ""}`;
+      <div class="hints">${hepsi.slice(0, 40).map(w => `<span class="chip">${gloss(w)}</span>`).join("")}</div></section>` : ""}
+    ${yedekKart()}`;
+}
+function yedekKart() {
+  const r = S.yedekSonuc;
+  return `<section class="card"><span class="label">Yedek ve aktarma</span><h3 style="font-size:20px">Damgaların ve Defter'in güvende kalsın</h3>
+    <div class="two"><button class="btn ghost" data-yedek="al">Yedek kodu al</button><button class="btn ghost" data-yedek="yukle">Kodu yapıştır</button></div>
+    ${S.yedek === "al" ? `<textarea id="yedek-kod" readonly aria-label="Yedek kodun">${esc(DEFTER.kodla(DF, S.stamped))}</textarea><button class="chip back" data-yedek-kopya>Kopyala</button>
+      <p class="muted">Kodu kendine e-posta at ya da bir nota kaydet. Damgaların, kelimelerin ve düzeltmelerin içindedir. Ücretsiz anahtarın ve hikâyelerin koda girmez.</p>` : ""}
+    ${S.yedek === "yukle" ? `<textarea id="yedek-gir" aria-label="Yedek kodu" placeholder="Kodu buraya yapıştır"></textarea><button class="btn" data-yedek-aktar>Bu cihaza aktar</button>
+      <p class="muted">Bu cihazdaki kayıtların silinmez, ikisi birleşir.</p>` : ""}
+    ${r ? `<div class="${r.ok ? "ok-note" : "err"}" role="status">${esc(r.metin)}</div>` : ""}</section>`;
+}
+function yedekAktar() {
+  try {
+    const g = DEFTER.kodCoz(document.getElementById("yedek-gir").value);
+    const yeniDamga = [...new Set(g.damgalar)].filter(i => SCENES[i] && !S.stamped.includes(i));
+    S.stamped.push(...yeniDamga);
+    const r = DEFTER.birlestir(DF, g.defter);
+    Object.entries(DF.words).forEach(([en, w]) => { if (!DICT[en]) DICT[en] = w.tr; });
+    dfYaz(); save();
+    Object.assign(S, { dq: null, yedek: null, yedekSonuc: { ok: true, metin: `Aktarıldı: ${yeniDamga.length} damga, ${r.kelime} kelime, ${r.hata} düzeltme eklendi.` } });
+  } catch (e) {
+    S.yedekSonuc = { ok: false, metin: "Bu kod okunamadı. Tamamını kopyaladığını kontrol et. Bu cihazdaki kayıtların değişmedi." };
+  }
+  render();
+}
+async function detIste() {
+  const id = ++serbestRun;
+  Object.assign(S, { busy: true, err: "" }); render();
+  try {
+    const d = await SOHBET.dosya(anahtar());
+    if (id !== serbestRun || S.screen !== "sohbet") return;
+    kelimeKaydet(d.words);
+    Object.assign(S, { det: d, detWait: false, busy: false }); render();
+  } catch (e) {
+    if (id !== serbestRun || S.screen !== "sohbet") return;
+    Object.assign(S, { busy: false, err: e.message }); render();
+  }
+}
+function detSon() {
+  const d = S.det, dogru = S.detSec === d.suclu;
+  return `<section class="card"><span class="closed">${dogru ? "DOSYA KAPANDI" : "YANLIŞ İZ"}</span><h2 style="font-size:26px;font-weight:800">${dogru ? "Doğru kişiyi buldun." : "Suçlu: " + esc(d.supheliler[d.suclu])}</h2>
+      <p style="margin:0">${esc(d.aciklama)}</p>
+      <div class="two"><div><b>${S.sent}</b><span>soru sordun</span></div><div><b>${S.fixes.length}</b><span>düzeltme Defter'e gitti</span></div></div></section>
+    ${S.fixes.length ? `<div class="card"><span class="label">Düzeltmelerin</span>${S.fixes.map(f => `<div class="fix"><s>${esc(f.t)}</s><b>${gloss(f.fix)}</b>${f.why ? `<small>${esc(f.why)}</small>` : ""}</div>`).join("")}</div>` : ""}
+    <button class="btn" data-det-new>Yeni dosya aç</button>
+    <button class="btn ghost" data-go="konus">Oyunlara dön</button>`;
+}
+
+// Kesintisiz bir dakika: tarayıcı dinlemeyi erken keserse süre bitene kadar yeniden başlatılır
+let dkSaat = 0, dkRec = null;
+function dkDur() {
+  clearInterval(dkSaat);
+  const r = dkRec; dkRec = null;
+  if (r) { r.onend = null; try { r.stop(); } catch (e) {} }
+}
+function dkYaz() {
+  const m = document.getElementById("dk-metin"), s = document.getElementById("dk-sayi");
+  if (m) m.textContent = S.dk.metin + S.dk.ara;
+  if (s) s.textContent = S.dk.kalan;
+}
+function dkBasla() {
+  if (!SR || S.noMic) { S.dk = { hal: "bos", konu: S.dk.konu, err: "Bu tarayıcıda mikrofonla yazıya çevirme çalışmıyor. Bilgisayarda Chrome ya da Edge ile dene." }; return render(); }
+  try { speechSynthesis.cancel(); } catch (e) {}
+  const d = S.dk = { hal: "akis", konu: S.dk.konu, kalan: 60, metin: "", ara: "", son: Date.now(), enUzun: 0, sonuc: null, err: "" };
+  render();
+  const ac = () => {
+    const r = new SR();
+    dkRec = r;
+    r.lang = "en-US"; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+    r.onresult = e => {
+      const simdi = Date.now();
+      d.enUzun = Math.max(d.enUzun, simdi - d.son); d.son = simdi;
+      d.ara = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) d.metin += e.results[i][0].transcript.trim() + " ";
+        else d.ara += e.results[i][0].transcript;
+      }
+      dkYaz();
+    };
+    r.onerror = e => {
+      if (!["not-allowed", "service-not-allowed", "audio-capture", "network"].includes(e.error)) return;
+      S.noMic = true; dkDur();
+      S.dk = { hal: "bos", konu: d.konu, err: "Mikrofon açılamadı. Tarayıcının mikrofon iznini kontrol edip tekrar dene." };
+      render();
+    };
+    r.onend = () => { d.metin += d.ara ? d.ara.trim() + " " : ""; d.ara = ""; try { ac(); } catch (e) {} };
+    r.start();
+  };
+  try { ac(); } catch (e) { S.noMic = true; dkDur(); S.dk = { hal: "bos", konu: d.konu, err: "Mikrofon açılamadı." }; return render(); }
+  dkSaat = setInterval(() => { d.kalan--; dkYaz(); if (d.kalan <= 0) dkBitir(); }, 1000);
+}
+function dkBitir() {
+  dkDur();
+  const d = S.dk;
+  d.metin = (d.metin + d.ara).trim(); d.ara = "";
+  d.enUzun = Math.max(d.enUzun, Date.now() - d.son);
+  d.adet = d.metin ? d.metin.split(/\s+/).length : 0;
+  d.onceki = DF.dkSon;
+  d.hal = "son";
+  if (d.adet) { DF.dkSon = d.adet; DF.dkEn = Math.max(DF.dkEn, d.adet); dfYaz(); dkDegerlendir(); }
+  else render();
+}
+async function dkDegerlendir() {
+  const id = ++serbestRun, d = S.dk;
+  Object.assign(d, { sonuc: null, err: "" }); render();
+  try {
+    const c = await SOHBET.dakika(anahtar(), d.konu, d.metin);
+    if (id !== serbestRun || S.dk !== d) return;
+    kelimeKaydet(c.words);
+    c.duzeltmeler.forEach(f => DEFTER.hataEkle(DF, f)); dfYaz();
+    d.sonuc = c; render();
+  } catch (e) {
+    if (id !== serbestRun || S.dk !== d) return;
+    d.err = e.message; render();
+  }
+}
+function dakika() {
+  const d = S.dk, geri = `<button class="chip back" data-go="konus">← Oyunlar</button>`;
+  if (d.hal === "akis") return `<section class="card"><span class="label">Dinliyorum · durma</span><div class="timer" id="dk-sayi">${d.kalan}</div><div class="heard" id="dk-metin" style="min-height:96px">${esc(d.metin + d.ara)}</div><button class="btn ghost" data-dk-bitir>Hemen bitir</button></section>`;
+  if (d.hal === "son") {
+    if (!d.adet) return `${geri}<section class="card"><span class="label">Bir dakika bitti</span><h2 style="font-size:26px;font-weight:800">Seni duyamadım.</h2><p class="muted">Mikrofona biraz daha yakın konuş ve yeniden dene.</p></section><button class="btn" data-dk-basla>Yeniden dene</button>`;
+    return `${geri}<section class="card"><span class="label">Bir dakika bitti</span><h2 style="font-size:26px;font-weight:800">${d.sonuc ? esc(d.sonuc.baslik) : "Değerlendiriliyor…"}</h2>
+      <div class="two"><div><b>${d.adet}</b><span>kelime duyuldu</span></div><div><b>${Math.round(d.enUzun / 1000)} sn</b><span>en uzun duraklama</span></div></div>
+      ${d.onceki ? `<p class="muted">Geçen sefer: ${d.onceki} kelime. En iyi skorun: ${DF.dkEn} kelime.</p>` : ""}
+      ${d.sonuc && d.sonuc.duzeltmeler.length ? `<span class="label">Daha doğal söyleyiş</span>${d.sonuc.duzeltmeler.map(f => `<div class="fix"><s>${esc(f.wrong)}</s><b>${gloss(f.right)}</b>${f.why ? `<small>${esc(f.why)}</small>` : ""}</div>`).join("")}<p class="muted">Bunlar Defter'e eklendi.</p>` : ""}
+      <p class="muted">Sayı tarayıcının duyduğu kadardır, kaçan kelimeler sayılmaz.</p></section>
+      ${d.err ? kartHata(d.err, "data-dk-degerlendir") : ""}
+      <button class="btn ${d.err ? "ghost" : ""}" data-dk-basla>Yeniden dene</button><button class="btn ghost" data-dk-konu>Başka konu</button>`;
+  }
+  if (!d.konu) d.konu = yeniKonu();
+  if (quiet()) return `${geri}<section class="card"><span class="label">Kesintisiz bir dakika</span><h2 style="font-size:26px;font-weight:800">Bu oyun sesli oynanır.</h2><p class="muted">İş yerindeysen sohbet ya da Dedektif'e geç. Uygun bir yerdeysen sesli moda al.</p><button class="btn" data-mode="sesli">Sesli moda geç</button></section>`;
+  return `${geri}<section class="case"><span class="label">Konu</span><h2>${esc(d.konu)}</h2><p>İngilizce konuş. Takılsan da durma, kelime aklına gelmezse başka türlü anlat.</p></section>
+    ${d.err ? `<div class="err" role="alert">${esc(d.err)}</div>` : ""}
+    <button class="chip back" data-dk-konu>Başka konu</button><button class="btn" data-dk-basla>60 saniyeyi başlat</button>${DF.dkEn ? `<p class="note">En iyi skorun: ${DF.dkEn} kelime</p>` : ""}`;
 }
 function dqSoru() {
   const q = S.dq, en = q.list[q.i];
@@ -1018,7 +1174,7 @@ function sohbet() {
   const bubbles = S.chat.map((m, i) => {
     if (m.fix) return `<div class="fix-line"><div class="fix"><s>${esc(m.fix.wrong)}</s><b>${gloss(m.fix.right)}</b>${m.fix.why ? `<small>${esc(m.fix.why)}</small>` : ""}</div></div>`;
     if (m.you) return `<div class="msg you"><div class="who">Sen</div>${gloss(m.t)}</div>`;
-    return `<div class="msg them"><div class="who">${S.zor !== null ? ZOR[S.zor].who : "Sohbet arkadaşın"}</div>${gloss(m.t)}
+    return `<div class="msg them"><div class="who">${S.det ? "Tanık" : S.zor !== null ? ZOR[S.zor].who : "Sohbet arkadaşın"}</div>${gloss(m.t)}
       <div class="msg-tools">${quiet() ? "" : `<button class="chip" data-say="${i}">${ICON.play} Dinle</button>`}${m.tr ? `<button class="chip" data-tr="${i}">Türkçesi</button>` : ""}</div>
       ${S.tr[i] ? `<div class="tr">${esc(m.tr)}</div>` : ""}</div>`;
   }).join("");
@@ -1026,12 +1182,14 @@ function sohbet() {
     ? `<div class="mic-row"><button class="mic listening" aria-label="Dinliyor">${ICON.mic}</button><p><b>Dinliyorum…</b> Şimdi söyle.</p></div>`
     : `<div class="mic-row"><button class="mic" data-free-mic aria-label="Konuşmak için bas">${ICON.mic}</button><p>${S.noMic || !SR ? "Bu ekranda mikrofon açılamıyor, yazarak devam et." : "Bas ve söyle ya da aşağıya yaz."}</p></div>`;
   return `<div class="top">${backBtn}<button class="chip" data-mode="${quiet() ? "sesli" : "sessiz"}">${quiet() ? ICON.mute + " Sessiz" : ICON.sound + " Sesli"}</button></div>
-    <div class="scene-head"><h3>${esc(S.topic)}</h3><button class="chip" data-go="sohbetSon">${S.zor !== null && S.sent ? "Karneyi gör" : "Sohbeti bitir"}</button></div>
-    <div class="chat" id="chat">${bubbles}${S.busy ? `<div class="typing">yazıyor…</div>` : ""}</div>
+    <div class="scene-head"><h3>${esc(S.det ? S.det.baslik : S.topic)}</h3>${S.detWait || S.det ? `<span class="label">${S.sent} / ${DET_SORU} soru</span>` : `<button class="chip" data-go="sohbetSon">${S.zor !== null && S.sent ? "Karneyi gör" : "Sohbeti bitir"}</button>`}</div>
+    ${S.det ? `<section class="case"><span class="label">Dosya</span><p>${gloss(S.det.olay)}</p>${S.det.olayTr ? `<button class="chip" data-det-tr>Türkçesi</button>${S.detTr ? `<p class="tr" style="color:inherit">${esc(S.det.olayTr)}</p>` : ""}` : ""}</section>` : ""}
+    <div class="chat" id="chat">${bubbles}${S.busy ? `<div class="typing">${S.detWait ? "Dosya hazırlanıyor…" : "yazıyor…"}</div>` : ""}</div>
     ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${!S.chat.length ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
-    <div class="dock">${mic}
-      <form class="compose" id="serbest-form"><input id="serbest" autocomplete="off" autocapitalize="sentences" aria-label="Mesajın" placeholder="Type your message…" value="${esc(S.draft)}"><button type="submit">Gönder</button></form>
-    </div>`;
+    ${S.detWait ? "" : S.det && S.sent >= DET_SORU ? `<p class="muted">Soru hakkın bitti, kararını ver.</p>` : `<div class="dock">${mic}
+      <form class="compose" id="serbest-form"><input id="serbest" autocomplete="off" autocapitalize="sentences" aria-label="Mesajın" placeholder="${S.det ? "Ask a question…" : "Type your message…"}" value="${esc(S.draft)}"><button type="submit">Gönder</button></form>
+    </div>`}
+    ${S.det ? `<div class="card"><span class="label">Çözdüm: suçlu kim?</span><div class="hints">${S.det.supheliler.map((n, i) => `<button class="chip" data-verdict="${i}" ${S.busy ? "disabled" : ""}>${gloss(n)}</button>`).join("")}</div></div>` : ""}`;
 }
 function sohbetSon() {
   const fixes = S.fixes.length
@@ -1081,7 +1239,7 @@ async function serbestIste() {
     if (id !== serbestRun || S.screen !== "sohbet") return;
     Object.assign(S, { busy: false, err: e.message });
     // Gönderilemeyen mesaj kaybolmasın, yazı kutusuna geri döner
-    if (S.hist.length > 1) { S.draft = S.hist.pop().text; S.chat.pop(); S.sent--; }
+    if (S.hist.length > 1 || S.det) { S.draft = S.hist.pop().text; S.chat.pop(); S.sent--; }
     render();
   }
 }
@@ -1091,7 +1249,7 @@ function serbestBasla(topic, ek) {
   serbestIste();
 }
 function serbestGonder(t) {
-  if (S.busy || !t.trim()) return;
+  if (S.busy || !t.trim() || (S.det && S.sent >= DET_SORU)) return;
   t = t.trim();
   if (!S.sent) { DF.chats++; dfYaz(); }
   S.chat.push({ you: true, t }); S.hist.push({ role: "user", text: t }); S.sent++; S.draft = "";
@@ -1113,7 +1271,7 @@ function serbestDinle() {
   try { speechSynthesis.cancel(); r.start(); } catch (e) { S.listening = false; S.noMic = true; render(); }
 }
 
-const SCREENS = { home, talk, talkEnd, ear, words, finish, konus, sohbet, sohbetSon, defter, av, dinle, hikaye };
+const SCREENS = { home, talk, talkEnd, ear, words, finish, konus, sohbet, sohbetSon, defter, av, dinle, hikaye, detSon, dakika };
 const NAV_IC = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const NAV = [
   ["home", "Rota", NAV_IC('<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>')],
@@ -1121,12 +1279,12 @@ const NAV = [
   ["defter", "Defter", NAV_IC('<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/>')],
   ["dinle", "Dinle", NAV_IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/>')],
 ];
-const NAV_SEKME = { home: "home", konus: "konus", sohbetSon: "konus", defter: "defter", av: "defter", dinle: "dinle", hikaye: "dinle" }; // yoksa ders ekranıdır: menü gizlenir
+const NAV_SEKME = { home: "home", konus: "konus", sohbetSon: "konus", detSon: "konus", dakika: "konus", defter: "defter", av: "defter", dinle: "dinle", hikaye: "dinle" }; // yoksa ders ekranıdır: menü gizlenir
 const nav = document.getElementById("nav");
 function render() {
   hideTip();
   app.innerHTML = SCREENS[S.screen]();
-  const sekme = NAV_SEKME[S.screen];
+  const sekme = S.screen === "dakika" && S.dk.hal === "akis" ? null : NAV_SEKME[S.screen]; // süre işlerken menüyle çıkılmasın
   nav.hidden = !sekme;
   document.body.classList.toggle("has-nav", !!sekme);
   if (sekme) document.getElementById("nav-ic").innerHTML = NAV.map(([id, ad, ic]) => `<button data-sekme="${id}" ${sekme === id ? 'aria-current="page"' : ""}>${ic}${ad}</button>`).join("");
@@ -1186,8 +1344,30 @@ app.addEventListener("click", e => {
     if (d.go === "finish" && !S.stamped.includes(S.cur)) { S.stamped.push(S.cur); save(); }
     if (d.go !== S.screen && (d.go === "ear" || d.go === "words")) S.order = [];
     if (d.go === "sohbetSon" || d.go === "dinle") { try { speechSynthesis.cancel(); } catch (x) {} }
+    if (d.go === "dakika") S.dk = { hal: "bos" };
     S.screen = d.go; render(); window.scrollTo({ top: 0 }); if (d.go === "ear") speak(s.ear[0].say);
     if (d.go === "sohbetSon" && S.zor !== null && S.sent && !S.karne) karneIste();
+    return;
+  }
+  if ("detNew" in d) {
+    if (!anahtar()) { S.screen = "konus"; return render(); }
+    Object.assign(S, fresh(), { screen: "sohbet", topic: "Dedektif", detWait: true }); window.scrollTo({ top: 0 });
+    return detIste();
+  }
+  if ("detTr" in d) { S.detTr = !S.detTr; return render(); }
+  if (d.verdict) { S.detSec = +d.verdict; S.screen = "detSon"; try { speechSynthesis.cancel(); } catch (x) {} window.scrollTo({ top: 0 }); return render(); }
+  if ("dkBasla" in d) return dkBasla();
+  if ("dkBitir" in d) return dkBitir();
+  if ("dkKonu" in d) { S.dk = { hal: "bos", konu: yeniKonu(S.dk.konu) }; return render(); }
+  if ("dkDegerlendir" in d) return dkDegerlendir();
+  if (d.yedek) { Object.assign(S, { yedek: d.yedek, yedekSonuc: null }); return render(); }
+  if ("yedekAktar" in d) return yedekAktar();
+  if ("yedekKopya" in d) {
+    const k = document.getElementById("yedek-kod");
+    k.select();
+    const tamam = () => { b.textContent = "Kopyalandı"; };
+    if (navigator.clipboard) navigator.clipboard.writeText(k.value).then(tamam, () => { b.textContent = "Seçili: elle kopyala"; });
+    else b.textContent = "Seçili: elle kopyala";
     return;
   }
   if (d.phone) { S.phone = d.phone; return render(); }
@@ -1218,7 +1398,7 @@ app.addEventListener("click", e => {
   if (d.topic) return serbestBasla(d.topic);
   if ("keyDel" in d) { anahtarYaz(""); Object.assign(S, fresh(), { screen: "konus", sErr: "" }); return render(); }
   if ("freeMic" in d) return serbestDinle();
-  if ("freeRetry" in d) return serbestIste();
+  if ("freeRetry" in d) return S.detWait ? detIste() : serbestIste();
   if ("mic" in d) return listen();
   if ("sendHeard" in d) return answer(S.heard, null);
   if (d.say) return speak(S.chat[+d.say].t);
