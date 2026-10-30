@@ -182,6 +182,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 @media (prefers-reduced-motion: reduce) { .mega { animation: none; } }
 .cumle.okunan { background: color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 3px; }
 .kel.okunan { background: color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 3px; }
+.satir-sil { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.satir-sil .story-row { min-width: 0; }
 .seg.uc { grid-template-columns: repeat(3, 1fr); }
 .case { background: var(--cover-2); color: var(--cover-ink); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
 .case .label { color: var(--accent); }
@@ -564,8 +566,8 @@ SCENES.push(...EK);
 Object.assign(DICT, SOZLUK_EK);
 Object.setPrototypeOf(DICT, null); // sohbette "constructor" gibi bir kelime geçerse sözlükte varmış sanılmasın
 
-const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false, final: null, bolum: 0, bolumSent: 0, finalHist: [], rol: null, tel: null, telYazi: false, telActi: 0, telBas: 0, kayitId: 0 });
-const S = Object.assign({ kat: 0, ayarAc: "", takip: false, kar: 0, seviye: "B1", finaller: [], damga: null, dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
+const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false, final: null, bolum: 0, bolumSent: 0, finalHist: [], ipucu: null, ipucuAcik: false, rol: null, tel: null, telYazi: false, telActi: 0, telBas: 0, kayitId: 0 });
+const S = Object.assign({ kelSec: "", silOnay: false, kat: 0, ayarAc: "", takip: false, kar: 0, seviye: "B1", finaller: [], damga: null, dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
 const app = document.getElementById("app");
 const tip = document.getElementById("tip");
 const sc = () => SCENES[S.cur];
@@ -982,7 +984,7 @@ const konusan = () => S.final !== null ? finalBolum().who : S.rol !== null ? ROL
 const DET_SORU = 10;
 const DK_KONU = ["Sana en çok zaman kazandıran alışkanlık", "Çocukluğundan unutamadığın bir gün", "Şehrinde en sevdiğin yer", "Yakın zamanda seni güldüren bir şey", "Bir milyon doların olsa ne yapardın", "En son izlediğin film ya da dizi", "İşinin en zor tarafı", "Hayalindeki tatil", "En sevdiğin yemek ve nasıl yapıldığı", "Daha iyi yapmak istediğin bir şey", "Hayatını kolaylaştıran bir teknoloji", "Sana bir şey öğreten bir hata"];
 const yeniKonu = eski => { const l = DK_KONU.filter(k => k !== eski); return l[Math.floor(Math.random() * l.length)]; };
-const kartHata = (metin, nitelik) => `<div class="err" role="alert">${esc(metin)}</div><button class="btn" ${nitelik}>Tekrar dene</button>${/Anahtar/.test(metin) ? `<button class="chip back" data-key-del>Anahtarı değiştir</button>` : ""}`;
+const kartHata = (metin, nitelik) => `<div class="err" role="alert">${esc(metin)}</div>${sinirEk(metin)}<button class="btn" ${nitelik}>Tekrar dene</button>${/Anahtar/.test(metin) ? `<button class="chip back" data-key-del>Anahtarı değiştir</button>` : ""}`;
 
 function keyScreen() {
   return `<div class="card"><span class="label">Bir kez yapılır · ücretsiz</span>
@@ -1024,9 +1026,42 @@ function zorlar() {
     <p class="muted">Yapay zekâ karaktere bürünür, cevabına göre tepki verir. Bitirince kısa bir karne alırsın.</p>`;
 }
 function sonsohbet() {
+  if (!DF.sohbetler.length) return `${backBtn}<div class="hub-title"><span class="label">Bu cihazda</span><h2>Son sohbetlerin</h2></div><p class="muted">Kayıtlı sohbetin kalmadı.</p>`;
   return `${backBtn}<div class="hub-title"><span class="label">Bu cihazda</span><h2>Son sohbetlerin</h2></div>
-    ${DF.sohbetler.map((g, i) => `<button class="story-row" data-gec="${i}"><span><b>${esc(g.topic)}</b><small>${new Date(g.at).toLocaleDateString("tr")} · ${g.sent} mesaj · ${g.fixes.length} düzeltme</small></span><span class="label">Aç</span></button>`).join("")}
-    <p class="muted">Açınca okur, istersen kaldığın yerden devam edersin. Son 20 sohbet saklanır.</p>`;
+    ${DF.sohbetler.map((g, i) => `<div class="satir-sil"><button class="story-row" data-gec="${i}"><span><b>${esc(g.topic)}</b><small>${new Date(g.at).toLocaleDateString("tr")} · ${g.sent} mesaj · ${g.fixes.length} düzeltme</small></span><span class="label">Aç</span></button><button class="chip" data-gec-sil="${i}" aria-label="${esc(g.topic)} sohbetini sil">Sil</button></div>`).join("")}
+    <p class="muted">Açınca okur, istersen kaldığın yerden devam edersin. Son 20 sohbet saklanır. Silinen sohbet geri gelmez, kelimelerin ve düzeltmelerin Defter'de kalır.</p>
+    ${S.silOnay ? `<div class="err" role="alert">${DF.sohbetler.length} sohbetin hepsi silinecek. Emin misin?</div><div class="two"><button class="btn" data-gec-hepsi>Evet, hepsini sil</button><button class="btn ghost" data-gec-vazgec>Vazgeç</button></div>` : `<button class="chip back" data-gec-sor>Hepsini sil</button>`}`;
+}
+// Yapay zekâ sınırı dolunca kalan seçenekler: bunların hiçbiri yapay zekâ istemez
+function sinirEk(m) {
+  if (!/sınırı/.test(m)) return "";
+  const n = next();
+  return `<section class="card"><span class="label">Bu arada yapay zekâsız çalış</span><div class="qtiles">
+    ${n >= 0 ? `<button class="qtile" data-start="${n}"><b>Yazılı durak</b><span>${SCENES[n].city}</span></button>` : ""}
+    ${Object.keys(DF.words).length ? `<button class="qtile" data-go="defter"><b>Kelime tekrarı</b><span>Defter'inden</span></button>` : ""}
+    <button class="qtile" data-go="kaliplar"><b>Sık kalıplar</b><span>Kurtarıcı cümleler</span></button>
+    ${DF.stories.length ? `<button class="qtile" data-go="dinle"><b>Eski hikâyeler</b><span>${DF.stories.length} hikâye</span></button>` : ""}
+  </div></section>`;
+}
+function ipucuKart() {
+  const p = S.ipucu;
+  if (!p) return "";
+  if (p.bekle) return `<p class="typing" style="margin:0">İpucu hazırlanıyor…</p>`;
+  if (p.err) return `<div class="err" role="alert">${esc(p.err)}</div>${sinirEk(p.err)}`;
+  return `<div class="fix"><span class="label">Şöyle düşünebilirsin</span>${p.ipuclari.map(t => `<small>${esc(t)}</small>`).join("")}
+    ${S.ipucuAcik ? `<b>${gloss(p.ornek)}</b>${p.ornekTr ? `<small>${esc(p.ornekTr)}</small>` : ""}` : `<div class="msg-tools"><button class="chip" data-ipucu-ornek>Yine de takıldım: örnek göster</button></div>`}</div>`;
+}
+async function ipucuIste() {
+  const sira = S.hist.length;
+  Object.assign(S, { ipucu: { bekle: true }, ipucuAcik: false }); render();
+  try {
+    const p = await SOHBET.ipucu(anahtar(), S.hist);
+    if (S.hist.length !== sira || S.screen !== "sohbet") return; // bu arada mesaj gönderildiyse ipucu eskidi
+    S.ipucu = p; render();
+  } catch (e) {
+    if (S.hist.length !== sira || S.screen !== "sohbet") return;
+    S.ipucu = { err: e.message }; render();
+  }
 }
 function kaliplar() {
   const k = KALIPLAR[S.kat];
@@ -1063,7 +1098,11 @@ function defter() {
       <button class="btn" data-av="${esc(harita[0][0])}">Hata avına çık: ${esc(harita[0][0].toLocaleLowerCase("tr"))}</button></section>` : ""}
     ${sonlar.length ? `<section class="card"><h3 style="font-size:20px">Son düzeltmelerin</h3>${sonlar.map(f => `<div class="fix"><s>${esc(f.wrong)}</s><b>${gloss(f.right)}</b>${f.why ? `<small>${esc(f.why)}</small>` : ""}</div>`).join("")}</section>` : ""}
     ${toplam ? `<section class="card"><div class="section-head"><h3>Kelimelerin</h3><span class="label">${toplam} kelime</span></div>
-      <div class="hints">${hepsi.slice(0, 40).map(w => `<span class="chip">${gloss(w)}</span>`).join("")}</div></section>` : ""}`;
+      <p class="muted">Düzenlemek için bir kelimeye dokun.</p>
+      <div class="hints">${hepsi.map(w => `<button class="chip" data-kel="${esc(w)}" style="${DF.words[w].bildi ? "opacity:.55" : ""}">${esc(w)}</button>`).join("")}</div>
+      ${S.kelSec && DF.words[S.kelSec] ? `<div class="fix"><b style="color:var(--ink)">${esc(S.kelSec)}</b>
+        <form class="compose" id="anlam-form"><input id="anlam" maxlength="120" autocomplete="off" aria-label="Türkçe anlamı" value="${esc(DF.words[S.kelSec].tr)}"><button type="submit">Kaydet</button></form>
+        <div class="msg-tools" style="flex-wrap:wrap"><button class="chip" data-kel-bildi>${DF.words[S.kelSec].bildi ? "Tekrar sırasına al" : "Biliyorum, sorma"}</button><button class="chip" data-kel-sil>Defter'den sil</button></div></div>` : ""}</section>` : ""}`;
 }
 function yedekKart() {
   const r = S.yedekSonuc;
@@ -1132,7 +1171,7 @@ function telefon() {
   return `<section class="case" style="align-items:center;text-align:center;padding:28px 18px"><span class="label">Görüşme · ${S.sent} cevap</span><h2>${TELEFON[S.tel].ad}</h2>
       <p>${S.busy ? "Karşı taraf konuşmak üzere…" : S.listening ? "Dinliyorum, şimdi söyle." : "Dinle, sonra cevap ver."}</p></section>
     ${S.telYazi && son ? `<div class="msg them" style="max-width:100%">${gloss(son.t)}${son.tr ? `<div class="tr">${esc(son.tr)}</div>` : ""}</div>` : ""}
-    ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${S.hist.length === 1 ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip back" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
+    ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${sinirEk(S.err)}${S.hist.length === 1 ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip back" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
     <div class="msg-tools" style="flex-wrap:wrap">${son ? `<button class="chip" data-tel-tekrar>${ICON.play} Tekrar söyle</button><button class="chip" data-tel-yazi>${S.telYazi ? "Yazıyı gizle" : "Yazıyı göster"}</button>` : ""}</div>
     <span class="label">Okuma hızı</span>${hizSec()}
     <div class="dock">${S.listening ? `<div class="mic-row"><button class="mic listening" aria-label="Dinliyor">${ICON.mic}</button><p><b>Dinliyorum…</b></p></div>`
@@ -1286,7 +1325,7 @@ function dinle() {
       ${S.sBusy ? `<p class="typing" style="margin:0">Hikâye yazılıyor…</p>` : `<div class="hints">${HIKAYE_KONU.map(k => `<button class="chip" data-hikaye="${k}">${k}</button>`).join("")}</div>
       <form class="compose" id="hikaye-form"><input id="hikaye" maxlength="120" autocomplete="off" aria-label="Kendi konun" placeholder="Ya da kendi konunu yaz"><button type="submit">Yaz</button></form>`}
       <p class="muted">Yapay zekâ seviyene uygun, her seferinde yeni bir hikâye yazar.</p></div>
-    ${S.sErr ? `<div class="err" role="alert">${esc(S.sErr)}</div>${/Anahtar/.test(S.sErr) ? `<button class="chip back" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
+    ${S.sErr ? `<div class="err" role="alert">${esc(S.sErr)}</div>${sinirEk(S.sErr)}${/Anahtar/.test(S.sErr) ? `<button class="chip back" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
     ${DF.stories.length ? `<div class="section-head"><h3>Son hikâyelerin</h3></div>${DF.stories.map((s, i) => `<button class="story-row" data-story="${i}"><span><b>${esc(s.baslik)}</b><small>${esc(s.konu || "")}</small></span><span class="label">Aç</span></button>`).join("")}` : ""}`;
 }
 async function hikayeIste(konu) {
@@ -1363,10 +1402,11 @@ function sohbet() {
     <div class="scene-head"><h3>${esc(S.det ? S.det.baslik : S.topic)}</h3>${S.final !== null ? `<span class="label">Bölüm ${S.bolum + 1} / 3</span>` : S.detWait || S.det ? `<span class="label">${S.sent} / ${DET_SORU} soru</span>` : `<button class="chip" data-go="sohbetSon">${karneli() && S.sent ? "Karneyi gör" : "Sohbeti bitir"}</button>`}</div>
     ${S.det ? `<section class="case"><span class="label">Dosya</span><p>${gloss(S.det.olay)}</p>${S.det.olayTr ? `<button class="chip" data-det-tr>Türkçesi</button>${S.detTr ? `<p class="tr" style="color:inherit">${esc(S.det.olayTr)}</p>` : ""}` : ""}</section>` : ""}
     <div class="chat" id="chat">${bubbles}${S.busy ? `<div class="typing">${S.detWait ? "Dosya hazırlanıyor…" : "yazıyor…"}</div>` : ""}</div>
-    ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${S.detWait || (S.hist.length === 1 && !S.det) ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
+    ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${sinirEk(S.err)}${S.detWait || (S.hist.length === 1 && !S.det) ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
     ${S.final !== null && S.bolumSent >= FINAL_MESAJ ? (S.busy ? "" : S.bolum < 2 ? `<button class="btn" data-final-next>Sonraki bölüm: ${esc(BOLGELER[S.final].final.bolumler[S.bolum + 1].who)}</button>` : `<button class="btn" data-go="sohbetSon">Finali bitir ve karneni gör</button>`)
-      : S.detWait ? "" : S.det && S.sent >= DET_SORU ? `<p class="muted">Soru hakkın bitti, kararını ver.</p>` : `<div class="dock">${mic}
+      : S.detWait ? "" : S.det && S.sent >= DET_SORU ? `<p class="muted">Soru hakkın bitti, kararını ver.</p>` : `<div class="dock">${ipucuKart()}${mic}
       <form class="compose" id="serbest-form"><input id="serbest" autocomplete="off" autocapitalize="sentences" aria-label="Mesajın" placeholder="${S.det ? "Ask a question…" : "Type your message…"}" value="${esc(S.draft)}"><button type="submit">Gönder</button></form>
+      ${S.det || !S.chat.length || S.busy || (S.ipucu && !S.ipucu.err) ? "" : `<button class="chip back" data-ipucu>Takıldım</button>`}
     </div>`}
     ${S.det ? `<div class="card"><span class="label">Çözdüm: suçlu kim?</span><div class="hints">${S.det.supheliler.map((n, i) => `<button class="chip" data-verdict="${i}" ${S.busy ? "disabled" : ""}>${gloss(n)}</button>`).join("")}</div></div>` : ""}`;
 }
@@ -1438,6 +1478,7 @@ function serbestBasla(topic, ek) {
 function serbestGonder(t) {
   if (S.busy || !t.trim() || (S.det && S.sent >= DET_SORU) || (S.final !== null && S.bolumSent >= FINAL_MESAJ)) return;
   if (S.final !== null) S.bolumSent++;
+  S.ipucu = null;
   t = t.trim();
   if (!S.sent) { DF.chats++; dfYaz(); }
   S.chat.push({ you: true, t }); S.hist.push({ role: "user", text: t }); S.sent++; S.draft = "";
@@ -1509,6 +1550,7 @@ app.addEventListener("submit", e => {
   if (e.target.id === "serbest-form") return serbestGonder(document.getElementById("serbest").value);
   if (e.target.id === "konu-form") { const k = document.getElementById("konu").value.trim(); if (k) serbestBasla(k); return; }
   if (e.target.id === "anahtar-form") { const k = document.getElementById("anahtar").value.trim(); if (k) { anahtarYaz(k); render(); } return; }
+  if (e.target.id === "anlam-form") { DEFTER.kelimeAnlam(DF, S.kelSec, document.getElementById("anlam").value); DICT[S.kelSec] = DF.words[S.kelSec].tr; dfYaz(); S.dq = null; S.kelSec = ""; return render(); }
   if (e.target.id === "hikaye-form") { const k = document.getElementById("hikaye").value.trim(); if (k) hikayeIste(k); return; }
   const v = document.getElementById("yaz").value.trim(); if (!v) return;
   const opt = sc().dialog[S.turn].opts.find(o => norm(o.t) === norm(v));
@@ -1549,6 +1591,15 @@ app.addEventListener("click", e => {
     return;
   }
   if ("damgaKapa" in d) { S.damga = null; return render(); }
+  if ("ipucu" in d) return ipucuIste();
+  if ("ipucuOrnek" in d) { S.ipucuAcik = true; return render(); }
+  if (d.kel) { S.kelSec = S.kelSec === d.kel ? "" : d.kel; return render(); }
+  if ("kelBildi" in d) { DEFTER.kelimeBildi(DF, S.kelSec, !DF.words[S.kelSec].bildi); dfYaz(); S.dq = null; return render(); }
+  if ("kelSil" in d) { DEFTER.kelimeSil(DF, S.kelSec); dfYaz(); S.dq = null; S.kelSec = ""; return render(); }
+  if (d.gecSil) { DEFTER.sohbetSil(DF, DF.sohbetler[+d.gecSil].id); dfYaz(); return render(); }
+  if ("gecSor" in d) { S.silOnay = true; return render(); }
+  if ("gecVazgec" in d) { S.silOnay = false; return render(); }
+  if ("gecHepsi" in d) { DF.sohbetler = []; S.silOnay = false; dfYaz(); return render(); }
   if (d.kar) { S.kar = +d.kar; save(); return render(); }
   if (d.hiz) { S.speed = +d.hiz; save(); return render(); }
   if (d.gec) {
@@ -1602,7 +1653,7 @@ app.addEventListener("click", e => {
   if (d.phone) { S.phone = d.phone; return render(); }
   if (d.ac) { S.ayarAc = S.ayarAc === d.ac ? "" : d.ac; return render(); }
   if (d.kat) { S.kat = +d.kat; return render(); }
-  if (d.kalip) { const [en, tr] = KALIPLAR[S.kat].l[+d.kalip]; kelimeKaydet([[en, tr]]); return render(); }
+  if (d.kalip) { const [en, tr] = KALIPLAR[S.kat].l[+d.kalip]; DEFTER.kelimeGeriAl(DF, en); kelimeKaydet([[en, tr]]); return render(); }
   if (d.kalipDinle) return speak(KALIPLAR[S.kat].l[+d.kalipDinle][0]);
   if (d.zor) return serbestBasla(ZOR[+d.zor].t, { zor: +d.zor });
   if ("karneRetry" in d) return karneIste();
