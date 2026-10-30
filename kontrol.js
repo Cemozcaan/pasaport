@@ -163,6 +163,17 @@ assert.strictEqual(y2.chats, 4); assert.strictEqual(y2.dkEn, 90);
 assert.throws(() => DEFTER.kodCoz("rastgele yazı"));
 assert.throws(() => DEFTER.kodCoz("PSP1-bozuk!!!"));
 
+// Sohbet geçmişi: aynı sohbet tek kayıt kalır, en çok 20, bozuk kayıt atılır, yedek koduna girmez
+const gc = DEFTER.bos();
+for (let i = 0; i < 25; i++) DEFTER.sohbetKaydet(gc, { id: i, topic: "t", chat: [], hist: [] });
+assert.strictEqual(gc.sohbetler.length, 20); assert.strictEqual(gc.sohbetler[0].id, 24);
+DEFTER.sohbetKaydet(gc, { id: 10, topic: "yeni", chat: [], hist: [] });
+assert.strictEqual(gc.sohbetler.length, 20); assert.strictEqual(gc.sohbetler[0].topic, "yeni"); assert.strictEqual(gc.sohbetler.filter(s => s.id === 10).length, 1);
+assert.strictEqual(DEFTER.yukle({ sohbetler: [{ id: 1 }, { id: 2, topic: "t", chat: [], hist: [] }, 5] }).sohbetler.length, 1);
+assert.strictEqual(DEFTER.kodCoz(DEFTER.kodla(gc, [], [])).defter.sohbetler.length, 0);
+// Sohbet karakteri talimata girer
+assert.ok(/personality: ciddi/.test(SOHBET.istekGovdesi(uzun, { konu: "x", tarz: "ciddi" }).systemInstruction.parts[0].text));
+assert.ok(!/personality/.test(SOHBET.istekGovdesi(uzun, { konu: "x" }).systemInstruction.parts[0].text));
 // Seviye: yapay zekâ talimatına girer
 SOHBET.seviyeAyarla("B2");
 assert.ok(/at B2 level/.test(SOHBET.istekGovdesi(uzun, { konu: "x" }).systemInstruction.parts[0].text));
