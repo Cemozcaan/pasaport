@@ -174,6 +174,160 @@ function sehirCiz(kod, ad) {
           <path d="M340 ${H}Q440 226 ${W} 214V${H}z" fill="url(#kum)"/>
           ${palmiye(556, 262, 196, -18, 1.25)}${palmiye(606, 268, 136, 12, .95)}${palmiye(492, 262, 104, -14, .7)}` };
     },
+    DUB() {
+      // Liffey kıyısı: renkli Georgian evler, Ha'penny köprüsü, Custom House kubbesi
+      const yer = 196, renk = ["#B8533F", "#3F6E7C", "#D2A23F", "#6C7F4F", "#8E4A5E", "#C7714A", "#4C5F8A"];
+      let evler = "";
+      for (let x = 0, i = 0; x < W; i++) {
+        const g = 44 + r() * 20, h = 62 + r() * 34, y = yer - h, c = renk[i % renk.length];
+        evler += `<rect x="${n(x)}" y="${n(y)}" width="${n(g)}" height="${n(h)}" fill="${c}"/><rect x="${n(x)}" y="${n(y - 5)}" width="${n(g)}" height="5" fill="#3A2F2C"/>`;
+        evler += `<rect x="${n(x + g * .15)}" y="${n(y - 12)}" width="7" height="8" fill="#4A3B36"/><rect x="${n(x + g * .68)}" y="${n(y - 12)}" width="7" height="8" fill="#4A3B36"/>`;
+        for (let wy = y + 8; wy < yer - 24; wy += 17) for (let wx = x + 7; wx < x + g - 9; wx += 13) evler += `<rect x="${n(wx)}" y="${n(wy)}" width="7" height="11" fill="${r() > .55 ? "#FFE3A0" : "#E7ECEA"}" opacity=".92"/><rect x="${n(wx + 3)}" y="${n(wy)}" width="1" height="11" fill="#3A2F2C" opacity=".5"/>`;
+        evler += `<path d="M${n(x + g / 2 - 6)} ${yer}v-16a6 6 0 0 1 12 0v16z" fill="${renk[(i + 3) % renk.length]}"/><rect x="${n(x + g + .5)}" y="${n(y)}" width="1" height="${n(h)}" fill="#2B2422" opacity=".4"/>`;
+        x += g + 1;
+      }
+      const kubbe = `<g transform="translate(90 0)"><rect x="-72" y="118" width="144" height="34" fill="#D9D3C2" opacity=".85"/><rect x="-16" y="84" width="32" height="34" fill="#D9D3C2" opacity=".9"/><path d="M-14 84Q0 54 14 84z" fill="#6E9C91"/><rect x="-1" y="42" width="2" height="24" fill="#6E9C91"/></g>`;
+      let kemer = "";
+      for (let i = 0; i <= 26; i++) { const x = 170 + i * 12, y = 196 - 58 * (1 - ((i - 13) / 13) ** 2); kemer += `<line x1="${x}" y1="${n(y)}" x2="${x}" y2="${n(y - 14)}" stroke="#F4F1E6" stroke-width="1.2"/>`; if (i % 3 === 0) kemer += `<circle cx="${x}" cy="${n(y - 17)}" r="1.8" fill="#F4F1E6"/>`; }
+      const kopru = `<path d="M170 196Q326 80 482 196" fill="none" stroke="#F4F1E6" stroke-width="5"/><path d="M170 190Q326 66 482 190" fill="none" stroke="#F4F1E6" stroke-width="2.4"/>${kemer}<path d="M156 198h340" stroke="#CFCBBB" stroke-width="5"/>${[170, 482].map(x => `<rect x="${x - 7}" y="176" width="14" height="24" fill="#EDE9DB"/><circle cx="${x}" cy="170" r="5" fill="#FFE3A0"/>`).join("")}`;
+      return { defs: gok("gk", [[0, "#6F8FA3"], [.55, "#B8CBC8"], [1, "#EAD9B8"]]) + gok("sv", [[0, "#6E8F7C"], [1, "#1F3B3C"]]) + parilti("gun", "#FFF2CE"),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/><circle cx="430" cy="66" r="110" fill="url(#gun)"/>${bulut(60, 34, 240, "#F3F2EA", .75)}${bulut(370, 46, 220, "#FBFAF2", .6)}${bulut(210, 70, 170, "#E7E8DF", .5)}
+          ${kubbe}<g id="anit"><g opacity=".97">${evler}</g><rect y="${yer}" width="${W}" height="4" fill="#3A332D"/>${kopru}</g>${su(yer + 4, "sv", "#EAF3E4", 42)}${yansima("anit", yer + 4)}` };
+    },
+    TOR() {
+      // Gece: CN Tower, Rogers Centre, Ontario Gölü
+      const yer = 226, cx = 230;
+      const kule = `<linearGradient id="beton" x1="0" x2="1"><stop offset="0" stop-color="#C9D3DE"/><stop offset=".5" stop-color="#8E9CAD"/><stop offset="1" stop-color="#4C5A6D"/></linearGradient>
+        <path d="M${cx - 15} ${yer}L${cx - 4} 92H${cx + 4}L${cx + 15} ${yer}z" fill="url(#beton)"/><path d="M${cx - 24} ${yer}L${cx - 6} 138L${cx - 3} 138L${cx - 9} ${yer}zM${cx + 24} ${yer}L${cx + 6} 138L${cx + 3} 138L${cx + 9} ${yer}z" fill="#6D7B8E"/>
+        <path d="M${cx - 2.5} 92V40h5v52z" fill="#A9B5C3"/><path d="M${cx - 1} 40L${cx} 6L${cx + 1} 40z" fill="#D5DDE6"/><circle cx="${cx}" cy="8" r="2" fill="#FF6E6E"/>
+        <ellipse cx="${cx}" cy="92" rx="23" ry="9" fill="url(#beton)"/><rect x="${cx - 23}" y="83" width="46" height="9" fill="url(#beton)"/><ellipse cx="${cx}" cy="83" rx="23" ry="6" fill="#B8C3D0"/>
+        ${[-18, -12, -6, 0, 6, 12, 18].map(d => `<rect x="${cx + d - 1.4}" y="85" width="2.8" height="5" fill="#FFE29A"/>`).join("")}<ellipse cx="${cx}" cy="58" rx="9" ry="3.6" fill="#A9B5C3"/>
+        ${Array.from({ length: 12 }, (_, i) => `<rect x="${cx - 1 - i * .55}" y="${100 + i * 10}" width="${2 + i * 1.1}" height="1" fill="#FFD27A" opacity=".55"/>`).join("")}`;
+      const kubbe = `<path d="M320 ${yer}V198Q384 158 448 198V${yer}z" fill="#39475C"/><path d="M320 198Q384 158 448 198" fill="none" stroke="#C5D2E0" stroke-width="2"/>${[0, 1, 2, 3, 4, 5, 6].map(i => `<path d="M${336 + i * 16} ${yer}V${n(198 - 34 * (1 - ((i - 3) / 4.2) ** 2))}" stroke="#55657C" stroke-width="1"/>`).join("")}`;
+      const yildiz = Array.from({ length: 70 }, () => `<circle cx="${n(r() * W)}" cy="${n(r() * 120)}" r="${n(.4 + r() * .7)}" fill="#FFFFFF" opacity="${n(.3 + r() * .6)}"/>`).join("");
+      return { defs: gok("gk", [[0, "#0B1A3A"], [.62, "#1E3E6E"], [.88, "#3F6A8F"], [1, "#E08A5F"]]) + gok("sv", [[0, "#2C3F60"], [1, "#050D1F"]]) + parilti("ay", "#EAF0FF"),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/>${yildiz}<circle cx="530" cy="52" r="60" fill="url(#ay)"/><circle cx="530" cy="52" r="15" fill="#F2F5FF"/>
+          <g opacity=".6">${sehir(0, W, yer, 40, 120, 16, 34, "#2A3E5F", "#FFD98A", .12)}</g><g id="anit"><g>${sehir(0, W, yer, 26, 88, 18, 36, "#142440", "#FFD98A", .36)}</g>${kule}${kubbe}${sehir(470, W, yer, 30, 100, 20, 34, "#0F1C33", "#FFD98A", .4)}</g>${su(yer, "sv", "#FFD98A", 40)}${yansima("anit", yer)}` };
+    },
+    EDI() {
+      // Alacakaranlıkta kaya üstünde Edinburgh Kalesi
+      const kaya = `M0 ${H}V236L70 226L140 198L196 178L236 142L262 134L420 128L452 150L488 186L560 216L640 232V${H}z`;
+      const catlak = Array.from({ length: 40 }, () => { const x = 170 + r() * 320, y = 150 + r() * 60; return `<path d="M${n(x)} ${n(y)}l${n(-7 + r() * 14)} ${n(14 + r() * 24)}l${n(-6 + r() * 12)} ${n(10 + r() * 24)}" fill="none" stroke="#4A4560" stroke-width="${n(1.5 + r() * 3)}" stroke-linecap="round" opacity="${n(.12 + r() * .18)}"/>`; }).join("");
+      const dis = (x, y, g, h, c) => { let d = `<rect x="${x}" y="${y}" width="${g}" height="${h}" fill="${c}"/>`; for (let i = 0; i < g; i += 7) d += `<rect x="${x + i}" y="${y - 4}" width="4" height="5" fill="${c}"/>`; return d; };
+      const pencere = (x, y, g, h) => Array.from({ length: Math.floor(g / 11) }, (_, i) => `<path d="M${x + 5 + i * 11} ${y + h}v-${h - 3}l2-3 2 3v${h - 3}z" fill="#F7C873" opacity="${n(.5 + r() * .5)}"/>`).join("");
+      const kale = dis(246, 110, 186, 30, "#3B3650") + pencere(246, 118, 186, 13) + dis(262, 78, 58, 34, "#454059") + pencere(262, 86, 58, 13) + dis(344, 66, 64, 46, "#3F3A54") + pencere(344, 76, 64, 13) + pencere(344, 96, 64, 11)
+        + `<path d="M344 66l10-14 10 14zM388 66l10-14 10 14z" fill="#2A2740"/><rect x="314" y="52" width="16" height="60" fill="#4B4560"/><path d="M314 52l8-16 8 16z" fill="#2F2B45"/><rect x="321" y="16" width="1.4" height="22" fill="#2A2740"/><path d="M322 18l14 4-14 5z" fill="#3B6EA8"/>` + dis(226, 134, 44, 22, "#37334B") + dis(420, 130, 40, 26, "#37334B");
+      const tepe = `<path d="M0 214Q100 170 190 200T360 190T640 176V${H}H0z" fill="#3B3B5B" opacity=".55"/><path d="M430 200L500 150L546 128L590 160L640 150V${H}H430z" fill="#2E2F4D" opacity=".7"/>`;
+      const sehirIsik = Array.from({ length: 90 }, () => `<rect x="${n(r() * W)}" y="${n(236 + r() * 40)}" width="2" height="2.4" fill="#FFD48A" opacity="${n(.35 + r() * .6)}"/>`).join("");
+      return { defs: gok("gk", [[0, "#1F2146"], [.48, "#4F3F72"], [.76, "#B56A78"], [1, "#F2A977"]]) + gok("kaya", [[0, "#3A3550"], [1, "#14141F"]]) + parilti("gun", "#FFC790"),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/><circle cx="120" cy="196" r="120" fill="url(#gun)"/>${bulut(350, 50, 240, "#D18C8C", .3)}${bulut(40, 90, 220, "#E39A85", .28)}${tepe}<path d="${kaya}" fill="url(#kaya)"/>${catlak}${kale}${sehirIsik}` };
+    },
+    LAX() {
+      // Gün batımı: Hollywood yazısı, palmiye sırası, alçak şehir
+      const palm = (x, y, h, o) => { let c = `<path d="M${x - 2 * o} ${y}Q${x + 1} ${y - h * .5} ${x} ${y - h}h${2.4 * o}Q${x + 4} ${y - h * .5} ${x + 3 * o} ${y}z" fill="#15112A"/>`; for (const [dx, dy] of [[-24, 5], [-20, -8], [-11, -14], [2, -16], [13, -12], [22, -6], [25, 6], [-14, 12], [15, 12]]) c += `<path d="M${x + 1} ${y - h}Q${n(x + dx * o * .55)} ${n(y - h + dy * o - 4 * o)} ${n(x + dx * o)} ${n(y - h + dy * o + 6 * o)}Q${n(x + dx * o * .45)} ${n(y - h + dy * o * .6)} ${x + 1} ${y - h}z" fill="#15112A"/>`; return c; };
+      const harf = (t, x, y) => `<text x="${x}" y="${y}" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="30" fill="#FFF8E6" stroke="#6E4A5C" stroke-width=".6" transform="translate(${x * .0} 0) skewX(-3)">${t}</text>`;
+      const tepe1 = `M0 170Q70 118 150 136T300 104T430 128T640 96V238H0z`, tepe2 = `M0 196Q110 158 240 188T470 168T640 178V238H0z`;
+      const cali = Array.from({ length: 80 }, () => { const x = r() * W, y = 150 + r() * 70; return `<ellipse cx="${n(x)}" cy="${n(y)}" rx="${n(3 + r() * 7)}" ry="${n(1.5 + r() * 3)}" fill="#2E2A4A" opacity="${n(.25 + r() * .3)}"/>`; }).join("");
+      const ev = sehir(0, W, 240, 8, 34, 16, 42, "#241C3C", "#FFD08A", .3);
+      const yol = `<path d="M0 ${H}V240H${W}V${H}z" fill="#12102A"/>` + Array.from({ length: 34 }, (_, i) => `<rect x="${i * 19 + 4}" y="256" width="9" height="1.6" fill="#E4C27C" opacity=".6"/>`).join("") + Array.from({ length: 26 }, () => `<circle cx="${n(r() * W)}" cy="${n(247 + r() * 5)}" r="1.1" fill="#FF8870"/>`).join("");
+      return { defs: gok("gk", [[0, "#3B2B6E"], [.36, "#C4507F"], [.62, "#FB8B57"], [.86, "#FFCF7A"], [1, "#FFE3A8"]]) + parilti("gun", "#FFE7A8"),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/><circle cx="500" cy="168" r="120" fill="url(#gun)"/><circle cx="500" cy="168" r="30" fill="#FFF3C4"/>${bulut(30, 62, 280, "#FFB28F", .35)}${bulut(330, 84, 240, "#FF9A85", .3)}
+          <path d="${tepe1}" fill="#5B3D6C"/>${cali}<g transform="translate(150 96) rotate(-3)">${"HOLLYWOOD".split("").map((h, i) => harf(h, i * 34, 40 + (i % 2) * 2)).join("")}</g><path d="${tepe2}" fill="#3A2B55"/>${ev}${yol}
+          ${[[34, 252, 150, 1.1], [92, 254, 120, .85], [566, 252, 170, 1.2], [612, 254, 124, .85], [510, 254, 96, .7], [140, 254, 86, .6]].map(p => palm(...p)).join("")}` };
+    },
+    CHI() {
+      // Sabah: Willis Tower, gökdelenler, göl kıyısı ve yansıyan "Cloud Gate"
+      const yer = 216, cx = 372;
+      const kat = (x, y, g, h) => `<rect x="${x}" y="${y}" width="${g}" height="${h}" fill="url(#cam)"/>`;
+      const willis = kat(cx - 34, 88, 68, yer - 88) + kat(cx - 34, 60, 46, 28) + kat(cx - 12, 36, 34, 52) + kat(cx - 24, 16, 22, 24)
+        + `<rect x="${cx - 17}" y="-6" width="2" height="22" fill="#1B2533"/><rect x="${cx - 10}" y="-6" width="2" height="22" fill="#1B2533"/>`
+        + Array.from({ length: 14 }, (_, i) => `<rect x="${cx - 34}" y="${60 + i * 12}" width="68" height="1" fill="#0D1520" opacity=".5"/>`).join("") + Array.from({ length: 6 }, (_, i) => `<rect x="${cx - 34 + i * 13.6}" y="88" width="1" height="${yer - 88}" fill="#0D1520" opacity=".35"/>`).join("");
+      const hancock = `<path d="M170 ${yer}L184 58H224L238 ${yer}z" fill="#2A3545"/><rect x="194" y="30" width="2" height="30" fill="#2A3545"/><rect x="212" y="30" width="2" height="30" fill="#2A3545"/>` + Array.from({ length: 5 }, (_, i) => `<path d="M${176 + i} ${yer - i * 30}L${232 - i} ${yer - 30 - i * 30}M${232 - i} ${yer - i * 30}L${176 + i} ${yer - 30 - i * 30}" stroke="#596A7E" stroke-width="1.3"/>`).join("");
+      const fasulye = `<linearGradient id="krom" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8F2FA"/><stop offset=".42" stop-color="#7E96AC"/><stop offset=".6" stop-color="#2C3B4E"/><stop offset=".78" stop-color="#C4D2DE"/><stop offset="1" stop-color="#6C7E90"/></linearGradient>
+        <path d="M34 262Q30 224 76 218Q104 210 136 218Q176 224 172 262Q150 248 103 250Q56 248 34 262z" fill="url(#krom)"/>`;
+      return { defs: gok("gk", [[0, "#3C7DB8"], [.62, "#A7D2E6"], [1, "#FBE3C0"]]) + gok("cam", [[0, "#3C4A5E"], [1, "#16202D"]]) + gok("sv", [[0, "#5CA2BE"], [1, "#16506C"]]) + parilti("gun", "#FFF3CF"),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/><circle cx="560" cy="60" r="100" fill="url(#gun)"/>${bulut(50, 38, 230, "#FFFFFF", .6)}${bulut(420, 90, 170, "#FFFFFF", .4)}
+          <g opacity=".5">${sehir(0, W, yer, 50, 150, 18, 36, "#6C8BA6", "#E9F6FB", .14)}</g>
+          <g id="anit">${sehir(0, W, yer, 40, 118, 20, 38, "#3C4D62", "#FFE7A8", .22)}${hancock}${willis}${sehir(430, W, yer, 34, 96, 22, 38, "#26323F", "#FFE7A8", .28)}${sehir(0, 170, yer, 24, 76, 22, 38, "#26323F", "#FFE7A8", .28)}</g>
+          ${su(yer, "sv", "#EAF9FF", 40)}${yansima("anit", yer)}<path d="M0 ${H}V258H220Q210 268 240 ${H}z" fill="#BFAE93"/>${fasulye}` };
+    },
+    BOS() {
+      // Sonbahar: tuğla sıra evler, Zakim köprüsü
+      const yer = 236;
+      const kule = x => `<path d="M${x - 9} ${yer - 40}L${x - 4} 34H${x + 4}L${x + 9} ${yer - 40}z" fill="#E7EDF2"/><path d="M${x - 2} 34L${x} 14L${x + 2} 34z" fill="#CFD8DF"/><rect x="${x - 10}" y="${yer - 90}" width="20" height="4" fill="#BFCAD2"/>`;
+      const halat = Array.from({ length: 11 }, (_, i) => [260 + i * 16, 470 - i * 16].map((x2, s) => `<line x1="${s ? 490 : 240}" y1="${48 + i * 4}" x2="${s ? 490 + 18 + i * 16 : 240 - 18 - i * 16}" y2="146" stroke="#EEF3F6" stroke-width=".9"/><line x1="${s ? 490 : 240}" y1="${48 + i * 4}" x2="${s ? 490 - 18 - i * 16 : 240 + 18 + i * 16}" y2="146" stroke="#F7FAFB" stroke-width=".9"/>`).join("")).join("");
+      const kopru = `${halat}<rect y="146" width="${W}" height="5" fill="#D8E0E6"/>${kule(240)}${kule(490)}`;
+      let evler = "";
+      for (let x = -4, i = 0; x < W; i++) {
+        const g = 56 + r() * 16, h = 64 + r() * 24, y = yer - h, c = ["#8C3F2E", "#7A3627", "#9B4A36", "#83402F"][i % 4];
+        evler += `<rect x="${n(x)}" y="${n(y)}" width="${n(g)}" height="${n(h)}" fill="${c}"/><rect x="${n(x)}" y="${n(y - 6)}" width="${n(g)}" height="6" fill="#2A2523"/><rect x="${n(x + g - 13)}" y="${n(y - 16)}" width="9" height="10" fill="#54332A"/>`;
+        for (let wy = y + 8; wy < yer - 22; wy += 18) for (let wx = x + 7; wx < x + g - 10; wx += 15) evler += `<rect x="${n(wx - 1)}" y="${n(wy - 1)}" width="10" height="14" fill="#E6DCC8"/><rect x="${n(wx)}" y="${n(wy)}" width="8" height="12" fill="${r() > .5 ? "#F8D88C" : "#3D4A58"}"/>`;
+        evler += `<path d="M${n(x + g / 2 - 7)} ${yer}v-15a7 7 0 0 1 14 0v15z" fill="#1F2A24"/><rect x="${n(x + g / 2 - 12)}" y="${yer - 4}" width="24" height="4" fill="#B9AFA0"/>`;
+        x += g + .6;
+      }
+      const agac = (x, y, R, c) => `<rect x="${x - 3}" y="${y}" width="6" height="${H - y}" fill="#2F211B"/>` + Array.from({ length: 22 }, () => `<circle cx="${n(x + (r() - .5) * R * 2)}" cy="${n(y + (r() - .6) * R * 1.4)}" r="${n(R * .22 + r() * R * .22)}" fill="${c[Math.floor(r() * c.length)]}"/>`).join("");
+      const son = ["#D9742B", "#E9A030", "#C8492B", "#F0BE4B", "#A83C26"];
+      return { defs: gok("gk", [[0, "#5D93BE"], [.6, "#BBD8DF"], [1, "#FBE7C5"]]) + parilti("gun", "#FFF2CC"),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/><circle cx="110" cy="46" r="90" fill="url(#gun)"/>${bulut(300, 30, 230, "#FFFFFF", .65)}${bulut(40, 88, 150, "#FFFFFF", .4)}
+          <g opacity=".5">${sehir(0, W, 200, 40, 118, 18, 36, "#7C9AB3", "#F2F7F8", .14)}</g>${kopru}${evler}<rect y="${yer}" width="${W}" height="${H - yer}" fill="#4B4640"/><rect y="${yer + 8}" width="${W}" height="2" fill="#8D8678"/>
+          ${agac(70, 226, 42, son)}${agac(330, 232, 36, son)}${agac(580, 222, 46, son)}` };
+    },
+    MEL() {
+      // Akşam: Flinders Street İstasyonu ve tramvay
+      const yer = 232, san = "#E3B447", koyu = "#B6803A";
+      const kemerler = (x0, x1, y, g, h) => { let c = ""; for (let x = x0; x < x1; x += g + 5) c += `<path d="M${x} ${y + h}v-${h - g / 2}a${g / 2} ${g / 2} 0 0 1 ${g} 0v${h - g / 2}z" fill="#FFD98E" opacity="${n(.6 + r() * .4)}"/>`; return c; };
+      const bina = `<rect x="0" y="108" width="${W}" height="${yer - 108}" fill="${san}"/><rect y="104" width="${W}" height="6" fill="${koyu}"/><rect y="158" width="${W}" height="4" fill="${koyu}"/><rect y="200" width="${W}" height="5" fill="${koyu}"/>
+        ${kemerler(6, 240, 116, 16, 34)}${kemerler(400, W, 116, 16, 34)}${kemerler(6, 240, 168, 18, 28)}${kemerler(400, W, 168, 18, 28)}
+        <rect x="244" y="74" width="152" height="${yer - 74}" fill="#EDC465"/><path d="M252 74A68 68 0 0 1 388 74z" fill="#3F8F7C"/><path d="M252 74A68 68 0 0 1 388 74" fill="none" stroke="#2C6B5C" stroke-width="2"/>
+        ${[-48, -24, 0, 24, 48].map(d => `<path d="M320 8Q${320 + d} 34 ${320 + d * 1.35} 74" fill="none" stroke="#2C6B5C" stroke-width="1.2"/>`).join("")}<rect x="316" y="-2" width="8" height="10" fill="#E3B447"/>
+        <path d="M264 ${yer}v-68a56 56 0 0 1 112 0v68z" fill="#6A3E23"/><path d="M272 ${yer}v-68a48 48 0 0 1 96 0v68z" fill="#FFD98E" opacity=".82"/>
+        ${[286, 306, 334, 354].map(x => `<circle cx="${x}" cy="92" r="9" fill="#FFF7DD" stroke="#5A3B20" stroke-width="1.6"/><path d="M${x} 92v-6M${x} 92l4 3" stroke="#2F2010" stroke-width="1.2"/>`).join("")}
+        ${[0, 244, 396, 628].map(x => `<rect x="${x}" y="64" width="12" height="${yer - 64}" fill="#CFA240"/><path d="M${x - 2} 64a8 10 0 0 1 16 0z" fill="#3F8F7C"/>`).join("")}`;
+      const tramvay = `<g transform="translate(66 200)"><rect width="224" height="50" rx="9" fill="#2E8F4E"/><rect y="28" width="224" height="11" fill="#F6F1D8"/><rect x="0" y="39" width="224" height="11" rx="4" fill="#1E6135"/>${Array.from({ length: 8 }, (_, i) => `<rect x="${10 + i * 26}" y="7" width="20" height="18" rx="2" fill="#FFE7A3"/>`).join("")}<rect x="104" y="-14" width="2" height="14" fill="#1A1A22"/><path d="M90 -22L120 -14" stroke="#1A1A22" stroke-width="1.6"/><circle cx="40" cy="52" r="6" fill="#111"/><circle cx="184" cy="52" r="6" fill="#111"/><circle cx="218" cy="42" r="3" fill="#FFF2B0"/></g>`;
+      const raylar = `<rect y="${yer}" width="${W}" height="${H - yer}" fill="#2E2C33"/><path d="M0 256H640M0 266H640" stroke="#6B6A73" stroke-width="1.2"/>` + Array.from({ length: 14 }, () => `<rect x="${n(r() * W)}" y="${n(238 + r() * 34)}" width="${n(10 + r() * 30)}" height="1.4" fill="#FFD98E" opacity=".28"/>`).join("");
+      return { defs: gok("gk", [[0, "#26325F"], [.5, "#7D5A8E"], [.82, "#F09A72"], [1, "#FBC988"]]) + parilti("gun", "#FFD9A0"),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/><circle cx="510" cy="90" r="110" fill="url(#gun)"/>${bulut(20, 32, 220, "#EDA58E", .35)}${bulut(420, 44, 200, "#F4B79A", .3)}<g opacity=".55">${sehir(0, W, 108, 16, 56, 16, 34, "#3D3F6E", "#FFDFA0", .22)}</g>${bina}${raylar}${tramvay}` };
+    },
+    GLA() {
+      // Yağmurlu Clyde: Finnieston Vinci, Armadillo, Hydro
+      const yer = 206;
+      const vinc = `<g fill="#1E2730">${Array.from({ length: 2 }, (_, i) => `<path d="M${470 + i * 50} ${yer}L${478 + i * 34} 76h6L${476 + i * 50} ${yer}z"/>`).join("")}<rect x="380" y="58" width="240" height="11"/><rect x="476" y="36" width="44" height="22"/><rect x="396" y="69" width="6" height="52"/><rect x="380" y="121" width="38" height="16"/></g>
+        ${Array.from({ length: 22 }, (_, i) => `<path d="M${384 + i * 10.6} 69l5 -11" stroke="#44525F" stroke-width="1"/>`).join("")}${Array.from({ length: 7 }, (_, i) => `<path d="M${480 - i * .4} ${88 + i * 17}h${38 - i * .3}" stroke="#44525F" stroke-width="1.2"/>`).join("")}`;
+      const kabuk = (x, g, h, c) => `<path d="M${x} ${yer}Q${x + g * .15} ${yer - h} ${x + g} ${yer - h * .4}L${x + g} ${yer}z" fill="${c}"/><path d="M${x + g * .1} ${yer}Q${x + g * .25} ${yer - h * .86} ${x + g} ${yer - h * .4}" fill="none" stroke="#7E8D99" stroke-width="1"/>`;
+      const armadillo = [0, 1, 2, 3, 4, 5, 6, 7].map(i => kabuk(100 + i * 24, 110 - i * 8, 86 - i * 7, ["#C7D1D9", "#B9C5CE", "#ABB8C2"][i % 3])).join("");
+      const hydro = `<ellipse cx="300" cy="${yer - 18}" rx="56" ry="26" fill="#5A7D9A"/><ellipse cx="300" cy="${yer - 24}" rx="44" ry="17" fill="#79A2C2" opacity=".6"/>${[-30, -14, 0, 14, 30].map(d => `<path d="M${300 + d} ${yer - 43}Q${300 + d * 1.5} ${yer - 18} ${300 + d} ${yer}" stroke="#3E5C75" stroke-width="1" fill="none"/>`).join("")}`;
+      const yagmur = Array.from({ length: 150 }, () => { const x = r() * W, y = r() * H, b = 8 + r() * 12; return `<line x1="${n(x)}" y1="${n(y)}" x2="${n(x - b * .25)}" y2="${n(y + b)}" stroke="#DCE6EC" stroke-width=".7" opacity="${n(.16 + r() * .3)}"/>`; }).join("");
+      return { defs: gok("gk", [[0, "#4C5966"], [.6, "#8A99A4"], [1, "#C6CEC8"]]) + gok("sv", [[0, "#6B7D88"], [1, "#212D36"]]),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/>${bulut(0, 32, 300, "#5D6A77", .75)}${bulut(260, 22, 340, "#566370", .8)}${bulut(120, 60, 280, "#6C7986", .5)}${bulut(420, 74, 240, "#6F7C89", .45)}
+          <g opacity=".55">${sehir(0, W, yer, 26, 98, 18, 34, "#65747F", "#FFE4A8", .18)}</g><g id="anit">${sehir(0, W, yer, 16, 52, 22, 42, "#39454F", "#FFE0A0", .3)}${hydro}${armadillo}${vinc}</g><rect y="${yer}" width="${W}" height="3" fill="#2B343C"/>${su(yer + 3, "sv", "#DCE6EA", 44)}${yansima("anit", yer + 3)}${yagmur}` };
+    },
+    YVR() {
+      // Karlı dağlar, cam kuleler, Canada Place yelkenleri, deniz uçağı
+      const yer = 214;
+      const dag = (d, c) => `<path d="${d}" fill="${c}"/>`;
+      const uzak = "M0 150L70 96L118 118L190 58L250 106L320 44L392 104L470 62L540 112L600 80L640 104V214H0z";
+      const kar = "M190 58L168 76L182 74L192 88L204 72L218 80zM320 44L296 66L312 62L322 78L336 62L350 72zM470 62L450 78L464 76L474 90L486 74L500 82zM70 96L54 110L68 108L76 118L86 106z";
+      const orta = "M0 180L90 138L170 164L270 126L370 166L470 134L560 168L640 146V214H0z";
+      const yelken = `<g transform="translate(70 0)">${[0, 26, 52, 78, 104].map((d, i) => `<path d="M${d} ${yer - 12}L${d + 15} ${yer - 62 + (i % 2) * 8}L${d + 28} ${yer - 12}z" fill="${i % 2 ? "#E4ECF1" : "#FFFFFF"}"/><path d="M${d + 15} ${yer - 62 + (i % 2) * 8}L${d + 28} ${yer - 12}L${d + 19} ${yer - 12}z" fill="#BFCFD9"/>`).join("")}<rect x="-14" y="${yer - 14}" width="160" height="14" fill="#7E6F60"/><rect x="-14" y="${yer - 18}" width="160" height="4" fill="#C6B9A8"/></g>`;
+      const ucak = `<g transform="translate(430 ${yer + 18})"><path d="M0 0Q30 -9 62 -3l10 -11 4 13q-30 9 -68 3z" fill="#FFFFFF"/><rect x="12" y="-14" width="44" height="3" fill="#C8352E"/><rect x="33" y="-12" width="1.5" height="9" fill="#333"/><path d="M6 7h56" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/><path d="M18 2v4M46 2v4" stroke="#555" stroke-width="1.2"/></g>`;
+      const orman = Array.from({ length: 130 }, () => { const x = r() * W, y = 160 + r() * 44, h = 6 + r() * 11; return `<path d="M${n(x)} ${n(y)}l${n(h * .35)} ${n(h)}h${n(-h * .7)}z" fill="#14473F" opacity="${n(.45 + r() * .5)}"/>`; }).join("");
+      return { defs: gok("gk", [[0, "#2A6FA8"], [.65, "#99CEE3"], [1, "#EEF1D9"]]) + gok("sv", [[0, "#4A99B0"], [1, "#0D3B57"]]) + gok("kule", [[0, "#7FAFC8"], [1, "#2F5D74"]]) + parilti("gun", "#FFF6D8"),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/><circle cx="90" cy="48" r="90" fill="url(#gun)"/>${bulut(380, 26, 220, "#FFFFFF", .6)}${dag(uzak, "#5F7E97")}${dag(kar, "#F4F8FB")}${dag(orta, "#2B5E58")}${orman}
+          <g id="anit">${sehir(200, W, yer, 44, 118, 18, 30, "url(#kule)", "#E8F6FB", .3)}${yelken}</g>${su(yer, "sv", "#F0FBFF", 40)}${yansima("anit", yer)}${ucak}` };
+    },
+    AKL() {
+      // Sky Tower, liman köprüsü, yelkenliler, Rangitoto volkanı
+      const yer = 212, cx = 250;
+      const kule = `<linearGradient id="beton" x1="0" x2="1"><stop offset="0" stop-color="#EBF0F3"/><stop offset=".55" stop-color="#AEBBC4"/><stop offset="1" stop-color="#6E7D88"/></linearGradient>
+        <rect x="${cx - 10}" y="84" width="20" height="${yer - 84}" fill="url(#beton)"/><path d="M${cx - 18} 92L${cx - 20} 64H${cx + 20}L${cx + 18} 92z" fill="url(#beton)"/><rect x="${cx - 21}" y="70" width="42" height="9" fill="#27424F"/>${[-16, -8, 0, 8, 16].map(d => `<rect x="${cx + d - 1.6}" y="72" width="3.2" height="5" fill="#BEE3F0"/>`).join("")}
+        <path d="M${cx - 12} 64L${cx - 7} 48H${cx + 7}L${cx + 12} 64z" fill="#8F9EA9"/><path d="M${cx - 2} 48L${cx} 2L${cx + 2} 48z" fill="#C7D1D8"/>${[-1, 1].map(s => `<rect x="${cx + s * 12 - 2}" y="104" width="4" height="${yer - 104}" fill="#94A4AE"/>`).join("")}`;
+      const kopru = (() => { let k = `<rect x="350" y="150" width="290" height="5" fill="#5D6B76"/><path d="M430 150Q510 92 590 150" fill="none" stroke="#5D6B76" stroke-width="4"/>`; for (let i = 0; i <= 16; i++) { const x = 430 + i * 10, y = 150 - 58 * (1 - ((i - 8) / 8) ** 2); k += `<line x1="${x}" y1="${n(y)}" x2="${x}" y2="150" stroke="#6E7D88" stroke-width="1"/>`; if (i < 16) k += `<line x1="${x}" y1="${n(y)}" x2="${x + 10}" y2="150" stroke="#83919B" stroke-width=".7"/>`; } [370, 430, 590].forEach(x => { k += `<rect x="${x - 4}" y="150" width="8" height="${yer - 150}" fill="#808F9A"/>`; }); return k; })();
+      const volkan = `<path d="M330 ${yer}Q420 158 482 150Q510 146 538 150Q600 158 640 186V${yer}z" fill="#527E74" opacity=".78"/><path d="M482 150Q510 146 538 150L524 158L496 158z" fill="#45695F" opacity=".7"/>`;
+      const yelkenli = (x, y, o, c) => `<g transform="translate(${x} ${y}) scale(${o})"><path d="M2 -46L2 -2L30 -2z" fill="#FFFFFF"/><path d="M0 -40L0 -2L-18 -2z" fill="${c}"/><path d="M-20 0H34L26 9H-14z" fill="#1E3A4A"/><rect x="0" y="-48" width="1.4" height="48" fill="#2E3A44"/></g>`;
+      return { defs: gok("gk", [[0, "#1E7FB0"], [.62, "#8FD3DD"], [1, "#F4EBC6"]]) + gok("sv", [[0, "#2E9EB0"], [1, "#0A4664"]]) + parilti("gun", "#FFF8D8"),
+        ciz: `<rect width="${W}" height="${H}" fill="url(#gk)"/><circle cx="540" cy="46" r="100" fill="url(#gun)"/>${bulut(30, 40, 250, "#FFFFFF", .75)}${bulut(330, 70, 180, "#FFFFFF", .5)}${volkan}
+          <g id="anit"><g opacity=".65">${sehir(60, 400, yer, 28, 94, 16, 30, "#7AA3B5", "#F0FAFD", .16)}</g>${sehir(0, 370, yer, 18, 66, 18, 34, "#3B6072", "#FFF3C4", .25)}${kule}${kopru}</g>${su(yer, "sv", "#EFFCFF", 44)}${yansima("anit", yer)}${yelkenli(90, 246, 1, "#E7553F")}${yelkenli(190, 258, .8, "#F3B13D")}${yelkenli(390, 244, .95, "#3F88C5")}${yelkenli(540, 262, 1.15, "#FFFFFF")}` };
+    },
   };
   if (!Object.hasOwn(CIZIM, kod)) return "";
   const c = CIZIM[kod]();
