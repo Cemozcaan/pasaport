@@ -561,8 +561,8 @@ SCENES.push(...EK);
 Object.assign(DICT, SOZLUK_EK);
 Object.setPrototypeOf(DICT, null); // sohbette "constructor" gibi bir kelime geçerse sözlükte varmış sanılmasın
 
-const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false, final: null, bolum: 0, bolumSent: 0, finalHist: [] });
-const S = Object.assign({ seviye: "B1", finaller: [], damga: null, dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
+const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false, final: null, bolum: 0, bolumSent: 0, finalHist: [], rol: null, tel: null, telYazi: false, telActi: 0, telBas: 0, kayitId: 0 });
+const S = Object.assign({ kar: 0, seviye: "B1", finaller: [], damga: null, dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
 const app = document.getElementById("app");
 const tip = document.getElementById("tip");
 const sc = () => SCENES[S.cur];
@@ -584,7 +584,7 @@ function gloss(text) {
 // İlerleme: önce bu cihazda, oturum açıksa hesapta da (telefon ve bilgisayar aynı yeri görür)
 let store = null;
 function save() {
-  const p = { stamped: S.stamped, mode: S.mode, seviye: S.seviye, finaller: S.finaller };
+  const p = { stamped: S.stamped, mode: S.mode, seviye: S.seviye, finaller: S.finaller, hiz: S.speed, kar: S.kar };
   try { localStorage.setItem("pasaport", JSON.stringify(p)); } catch (e) {}
   if (store) store.set(p).catch(() => {});
 }
@@ -594,6 +594,8 @@ function apply(p) {
   if (p.mode === "sesli" || p.mode === "sessiz") S.mode = p.mode;
   if (["A2", "B1", "B2"].includes(p.seviye)) { S.seviye = p.seviye; SOHBET.seviyeAyarla(p.seviye); }
   if (Array.isArray(p.finaller)) S.finaller = p.finaller.filter(i => BOLGELER[i]);
+  if ([0.7, 1, 1.25].includes(p.hiz)) S.speed = p.hiz;
+  if (Number.isInteger(p.kar) && p.kar >= 0 && p.kar < 4) S.kar = p.kar;
 }
 try { apply(JSON.parse(localStorage.getItem("pasaport"))); } catch (e) {}
 (async () => {
@@ -932,10 +934,36 @@ const ZOR = [
   { t: "Toplantıda itiraz", d: "Fikrine karşı çıkanlara cevap ver", h: 3, who: "İş arkadaşı", k: "You are a colleague in a meeting who disagrees with Cem's idea and interrupts. Respect him only if he disagrees clearly and politely." },
 ];
 const backBtn = `<button class="chip" data-go="konus">← Konuş</button>`;
+const KARAKTER = [
+  { ad: "Standart", yazi: "Yardımsever, sade bir sohbet arkadaşı.", tarz: "" },
+  { ad: "Esprili İrlandalı", yazi: "Şakacı, sıcak, İrlandalı ifadeler kullanır.", tarz: "a witty, warm Irishman who loves jokes and uses a few common Irish expressions." },
+  { ad: "Ciddi profesör", yazi: "Kibar, düzgün cümleler, biraz resmî.", tarz: "a serious, polite university professor who speaks in careful, slightly formal English." },
+  { ad: "Geveze Amerikalı", yazi: "Enerjik, çok konuşur, günlük Amerikan dili.", tarz: "an energetic, talkative American who shares little stories and uses casual American English." },
+];
+const ROLLER = [
+  { ad: "Garson", d: "Müşterin menüyü soruyor, kararsız", kar: "Müşteri", k: "Cem is playing a waiter in a restaurant and you are the customer. Ask about the dishes, change your mind, ask for something special, and later ask for the bill." },
+  { ad: "Doktor", d: "Hastan şikâyetini anlatıyor", kar: "Hasta", k: "Cem is playing a doctor and you are a worried patient with a headache. Describe your symptoms a little at a time and ask what you should do." },
+  { ad: "Şehir rehberi", d: "Turistler Adana'yı soruyor", kar: "Turist", k: "Cem is playing a local city guide in Adana, Turkey, and you are a curious tourist with one free day. Ask what to see and eat, and how to get around." },
+  { ad: "Mağaza görevlisi", d: "Müşterin telefon almak istiyor", kar: "Müşteri", k: "Cem is playing a phone shop assistant and you are a customer who is not good with technology. Ask him to explain the options and the prices simply." },
+  { ad: "Otel görevlisi", d: "Misafirin odasını beğenmedi", kar: "Misafir", k: "Cem is playing a hotel receptionist and you are a guest who is unhappy with your room. Complain politely and expect him to offer a solution." },
+  { ad: "Patron", d: "Çalışanın izin istiyor", kar: "Çalışan", k: "Cem is playing a boss and you are his employee who wants a week off at a busy time. Explain why, and answer his questions." },
+];
+const TELEFON = [
+  { ad: "Otel resepsiyonu", k: "You are calling Cem from a hotel front desk about a problem with tonight's booking." },
+  { ad: "Kargo şirketi", k: "You are calling Cem from a delivery company. You cannot find his address and need directions and a time." },
+  { ad: "Doktor sekreteri", k: "You are a doctor's receptionist calling Cem to change his appointment time." },
+  { ad: "Müşteri", k: "You are a customer calling Cem at work to ask about a price offer you have not received yet." },
+  { ad: "Eski arkadaş", k: "You are an old friend calling Cem to catch up and to invite him to dinner next week." },
+  { ad: "Banka", k: "You are a bank employee calling Cem about an unusual payment on his card. Do not ask for any passwords or card numbers." },
+];
+const sohbette = () => S.screen === "sohbet" || S.screen === "telefon";
+const hizSec = () => `<div class="speed">${[[0.7, "Yavaş"], [1, "Normal"], [1.25, "Hızlı"]].map(([v, n]) => `<button class="chip" data-hiz="${v}" aria-pressed="${S.speed === v}">${n}</button>`).join("")}</div>`;
 const FINAL_MESAJ = 4; // her final bölümünde kullanıcı mesajı
 const finalBolum = () => BOLGELER[S.final].final.bolumler[S.bolum];
-const karneli = () => S.zor !== null || S.final !== null;
-const ayar = () => S.final !== null ? { karakter: finalBolum().k } : S.det ? { karakter: SOHBET.tanik(S.det) } : S.zor !== null ? { karakter: ZOR[S.zor].k } : { konu: S.topic, odak: S.odak };
+const karneli = () => S.zor !== null || S.final !== null || S.rol !== null;
+const ayar = () => S.final !== null ? { karakter: finalBolum().k } : S.det ? { karakter: SOHBET.tanik(S.det) } : S.zor !== null ? { karakter: ZOR[S.zor].k }
+  : S.rol !== null ? { karakter: ROLLER[S.rol].k } : S.tel !== null ? { karakter: TELEFON[S.tel].k + " This is a phone call, so keep every line short and clear." } : { konu: S.topic, odak: S.odak, tarz: KARAKTER[S.kar].tarz };
+const konusan = () => S.final !== null ? finalBolum().who : S.rol !== null ? ROLLER[S.rol].kar : S.tel !== null ? TELEFON[S.tel].ad : S.zor === null && !S.det && S.kar ? KARAKTER[S.kar].ad : "";
 const DET_SORU = 10;
 const DK_KONU = ["Sana en çok zaman kazandıran alışkanlık", "Çocukluğundan unutamadığın bir gün", "Şehrinde en sevdiğin yer", "Yakın zamanda seni güldüren bir şey", "Bir milyon doların olsa ne yapardın", "En son izlediğin film ya da dizi", "İşinin en zor tarafı", "Hayalindeki tatil", "En sevdiğin yemek ve nasıl yapıldığı", "Daha iyi yapmak istediğin bir şey", "Hayatını kolaylaştıran bir teknoloji", "Sana bir şey öğreten bir hata"];
 const yeniKonu = eski => { const l = DK_KONU.filter(k => k !== eski); return l[Math.floor(Math.random() * l.length)]; };
@@ -961,14 +989,23 @@ function konus() {
   return `${baslik}
     <div class="seg uc"><button data-seg="serbest" aria-pressed="${S.seg === "serbest"}">Serbest</button><button data-seg="zor" aria-pressed="${zor}">Zor anlar</button><button data-seg="oyun" aria-pressed="${S.seg === "oyun"}">Oyunlar</button></div>
     ${S.seg === "oyun" ? `<button class="hard" data-det-new><span><b>Dedektif</b><small>Sorular sorarak gizemi çöz. Sessiz modda da oynanır.</small></span><span class="label">Oyna</span></button>
-      <button class="hard" data-go="dakika"><span><b>Kesintisiz bir dakika</b><small>Bir konuda 60 saniye durmadan konuş. Mikrofon gerekir.</small></span><span class="label">Başla</span></button>`
+      <button class="hard" data-go="dakika"><span><b>Kesintisiz bir dakika</b><small>Bir konuda 60 saniye durmadan konuş. Mikrofon gerekir.</small></span><span class="label">Başla</span></button>
+      <button class="hard" data-go="telefon"><span><b>Telefon modu</b><small>Yazı yok: duyar, konuşursun. Mikrofon gerekir.</small></span><span class="label">Ara</span></button>
+      <button class="hard" data-go="roller"><span><b>Roller ters</b><small>Bu kez garson, doktor ya da rehber sensin. Sessiz modda da oynanır.</small></span><span class="label">Oyna</span></button>`
     : zor ? ZOR.map((z, i) => `<button class="hard" data-zor="${i}"><span><b>${z.t}</b><small>${z.d}</small></span>
         <span class="ticks" role="img" aria-label="Zorluk ${z.h} / 3">${[1, 2, 3].map(n => `<i class="${n <= z.h ? "on" : ""}"></i>`).join("")}</span></button>`).join("")
       + `<p class="muted">Yapay zekâ karaktere bürünür, cevabına göre tepki verir. Bitirince kısa bir karne alırsın.</p>`
     : `<div class="card"><h3 style="font-size:20px">Bugün ne konuşalım?</h3>
       <div class="hints">${KONULAR.map(k => `<button class="chip" data-topic="${k}">${k}</button>`).join("")}</div>
       <form class="compose" id="konu-form"><input id="konu" maxlength="120" autocomplete="off" aria-label="Kendi konun" placeholder="Ya da kendi konunu yaz"><button type="submit">Başla</button></form>
-      <p class="muted">Takılırsan Türkçe yaz, İngilizcesini söylesin. Kelimeler ve hatalar Defter'e kaydedilir.</p></div>`}
+      <p class="muted">Takılırsan Türkçe yaz, İngilizcesini söylesin. Kelimeler ve hatalar Defter'e kaydedilir.</p>
+      <span class="label">Sohbet arkadaşın</span>
+      <div class="seg" style="grid-template-columns:1fr 1fr">${KARAKTER.map((k, i) => `<button data-kar="${i}" aria-pressed="${S.kar === i}">${k.ad}</button>`).join("")}</div>
+      <p class="muted">${KARAKTER[S.kar].yazi}</p>
+      <span class="label">Okuma hızı</span>${hizSec()}</div>
+      ${DF.sohbetler.length ? `<section class="card"><div class="section-head"><h3>Son sohbetlerin</h3><span class="label">Bu cihazda</span></div>
+        <div>${DF.sohbetler.map((g, i) => `<button class="region" data-gec="${i}"><span><b>${esc(g.topic)}</b><small>${new Date(g.at).toLocaleDateString("tr")} · ${g.sent} mesaj · ${g.fixes.length} düzeltme</small></span><span class="label">Aç</span></button>`).join("")}</div>
+        <p class="muted">Açınca okur, istersen kaldığın yerden devam edersin. Son 20 sohbet saklanır.</p></section>` : ""}`}
     <button class="chip back" data-key-del>Anahtarı değiştir</button>`;
 }
 function defter() {
@@ -1030,11 +1067,11 @@ async function detIste() {
   Object.assign(S, { busy: true, err: "" }); render();
   try {
     const d = await SOHBET.dosya(anahtar());
-    if (id !== serbestRun || S.screen !== "sohbet") return;
+    if (id !== serbestRun || !sohbette()) return;
     kelimeKaydet(d.words);
     Object.assign(S, { det: d, detWait: false, busy: false }); render();
   } catch (e) {
-    if (id !== serbestRun || S.screen !== "sohbet") return;
+    if (id !== serbestRun || !sohbette()) return;
     Object.assign(S, { busy: false, err: e.message }); render();
   }
 }
@@ -1046,6 +1083,42 @@ function detSon() {
     ${S.fixes.length ? `<div class="card"><span class="label">Düzeltmelerin</span>${S.fixes.map(f => `<div class="fix"><s>${esc(f.t)}</s><b>${gloss(f.fix)}</b>${f.why ? `<small>${esc(f.why)}</small>` : ""}</div>`).join("")}</div>` : ""}
     <button class="btn" data-det-new>Yeni dosya aç</button>
     <button class="btn ghost" data-go="konus">Oyunlara dön</button>`;
+}
+
+function roller() {
+  return `<button class="chip back" data-go="konus">← Oyunlar</button><div class="hub-title"><span class="label">Roller ters</span><h2>Bugün kim olacaksın?</h2></div>
+    ${ROLLER.map((x, i) => `<button class="hard" data-rol="${i}"><span><b>${x.ad}</b><small>${x.d}</small></span><span class="label">Seç</span></button>`).join("")}
+    <p class="muted">Yapay zekâ karşındaki kişi olur, sen cevap verir ve açıklarsın. Bitirince karne alırsın.</p>`;
+}
+function telefon() {
+  const geri = `<button class="chip back" data-go="konus">← Oyunlar</button>`;
+  if (S.tel === null) {
+    if (quiet()) return `${geri}<section class="card"><span class="label">Telefon modu</span><h2 style="font-size:26px;font-weight:800">Bu oyun sesli oynanır.</h2><p class="muted">İş yerindeysen Roller ters ya da Dedektif'e geç. Uygun bir yerdeysen sesli moda al.</p><button class="btn" data-mode="sesli">Sesli moda geç</button></section>`;
+    return `${geri}<div class="hub-title"><span class="label">Telefon modu</span><h2>Seni kim arasın?</h2></div>
+      ${TELEFON.map((x, i) => `<button class="hard" data-tel="${i}"><span><b>${x.ad}</b></span><span class="label">Ara</span></button>`).join("")}
+      <p class="muted">Ekranda yazı olmaz. Dinlersin, sonra mikrofona basıp cevap verirsin. Takılırsan yazıyı açabilirsin.</p>`;
+  }
+  const son = [...S.chat].reverse().find(m => m.t && !m.you);
+  const yazili = !SR || S.noMic;
+  return `<section class="case" style="align-items:center;text-align:center;padding:28px 18px"><span class="label">Görüşme · ${S.sent} cevap</span><h2>${TELEFON[S.tel].ad}</h2>
+      <p>${S.busy ? "Karşı taraf konuşmak üzere…" : S.listening ? "Dinliyorum, şimdi söyle." : "Dinle, sonra cevap ver."}</p></section>
+    ${S.telYazi && son ? `<div class="msg them" style="max-width:100%">${gloss(son.t)}${son.tr ? `<div class="tr">${esc(son.tr)}</div>` : ""}</div>` : ""}
+    ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${S.hist.length === 1 ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip back" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
+    <div class="msg-tools" style="flex-wrap:wrap">${son ? `<button class="chip" data-tel-tekrar>${ICON.play} Tekrar söyle</button><button class="chip" data-tel-yazi>${S.telYazi ? "Yazıyı gizle" : "Yazıyı göster"}</button>` : ""}</div>
+    <span class="label">Okuma hızı</span>${hizSec()}
+    <div class="dock">${S.listening ? `<div class="mic-row"><button class="mic listening" aria-label="Dinliyor">${ICON.mic}</button><p><b>Dinliyorum…</b></p></div>`
+      : yazili ? `<p class="muted" style="margin:0">Bu cihazda mikrofon açılamıyor, cevabını yaz.</p><form class="compose" id="serbest-form"><input id="serbest" autocomplete="off" aria-label="Cevabın" placeholder="Type your answer…" value="${esc(S.draft)}"><button type="submit">Gönder</button></form>`
+      : `<div class="mic-row"><button class="mic" data-free-mic ${S.busy ? "disabled" : ""} aria-label="Konuşmak için bas">${ICON.mic}</button><p>Bas ve cevabını söyle.</p></div>`}</div>
+    <button class="btn ghost" data-tel-bitir>Görüşmeyi bitir</button>`;
+}
+function telSon() {
+  const sn = Math.round((Date.now() - S.telBas) / 1000);
+  S.telSure = S.telSure || `${Math.floor(sn / 60)} dk ${sn % 60} sn`;
+  return `<section class="card"><span class="label">Görüşme bitti · ${S.telSure}</span><h2 style="font-size:26px;font-weight:800">${S.sent && !S.telActi ? "Yazıya bakmadan konuştun." : S.sent ? "Görüşmeyi tamamladın." : "Görüşme kısa kaldı."}</h2>
+      <div class="two"><div><b>${S.sent}</b><span>cevap verdin</span></div><div><b>${S.telActi}</b><span>kez yazıyı açtın</span></div></div>
+      ${S.fixes.map(f => `<div class="fix"><s>${esc(f.t)}</s><b>${gloss(f.fix)}</b>${f.why ? `<small>${esc(f.why)}</small>` : ""}</div>`).join("")}
+      ${S.fixes.length ? `<p class="muted">Bunlar Defter'e eklendi.</p>` : ""}</section>
+    <button class="btn" data-go="telefon">Yeni arama</button><button class="btn ghost" data-go="konus">Oyunlara dön</button>`;
 }
 
 // Kesintisiz bir dakika: tarayıcı dinlemeyi erken keserse süre bitene kadar yeniden başlatılır
@@ -1225,7 +1298,7 @@ function hikaye() {
   const h = S.st, q = h.sorular[S.sq], sesli = !quiet();
   return `<button class="chip back" data-go="dinle">← Hikâyeler</button>
     <section class="card"><span class="label">${sesli ? "Önce dinle" : "Sessiz mod: oku"}</span><h2 style="font-size:26px;font-weight:800">${esc(h.baslik)}</h2>
-      ${sesli ? `<div class="msg-tools"><button class="chip" data-oku>${ICON.play} Dinle</button><button class="chip" data-dur>Durdur</button>${S.reveal ? "" : `<button class="chip" data-reveal>Metni göster</button>`}</div>` : ""}
+      ${sesli ? `<div class="msg-tools"><button class="chip" data-oku>${ICON.play} Dinle</button><button class="chip" data-dur>Durdur</button>${S.reveal ? "" : `<button class="chip" data-reveal>Metni göster</button>`}</div>${hizSec()}` : ""}
       ${sesli && !S.reveal ? "" : `<p class="story">${gloss(h.metin)}</p>`}</section>
     <section class="card">${q ? `<div class="section-head"><span class="label">Soru</span><span class="label">${S.sq + 1} / ${h.sorular.length}</span></div><h3 style="font-size:20px">${esc(q.q)}</h3>
       <div class="options">${q.o.map((o, i) => `<button class="opt ${S.sPick === null ? "" : i === q.a ? "right" : i === S.sPick ? "wrong" : ""}" data-sq="${i}" ${S.sPick === null ? "" : "disabled"}>${esc(o)}</button>`).join("")}</div>
@@ -1244,7 +1317,7 @@ function sohbet() {
     ? `<div class="mic-row"><button class="mic listening" aria-label="Dinliyor">${ICON.mic}</button><p><b>Dinliyorum…</b> Şimdi söyle.</p></div>`
     : `<div class="mic-row"><button class="mic" data-free-mic aria-label="Konuşmak için bas">${ICON.mic}</button><p>${S.noMic || !SR ? "Bu ekranda mikrofon açılamıyor, yazarak devam et." : "Bas ve söyle ya da aşağıya yaz."}</p></div>`;
   return `<div class="top">${backBtn}<button class="chip" data-mode="${quiet() ? "sesli" : "sessiz"}">${quiet() ? ICON.mute + " Sessiz" : ICON.sound + " Sesli"}</button></div>
-    <div class="scene-head"><h3>${esc(S.det ? S.det.baslik : S.topic)}</h3>${S.final !== null ? `<span class="label">Bölüm ${S.bolum + 1} / 3</span>` : S.detWait || S.det ? `<span class="label">${S.sent} / ${DET_SORU} soru</span>` : `<button class="chip" data-go="sohbetSon">${S.zor !== null && S.sent ? "Karneyi gör" : "Sohbeti bitir"}</button>`}</div>
+    <div class="scene-head"><h3>${esc(S.det ? S.det.baslik : S.topic)}</h3>${S.final !== null ? `<span class="label">Bölüm ${S.bolum + 1} / 3</span>` : S.detWait || S.det ? `<span class="label">${S.sent} / ${DET_SORU} soru</span>` : `<button class="chip" data-go="sohbetSon">${karneli() && S.sent ? "Karneyi gör" : "Sohbeti bitir"}</button>`}</div>
     ${S.det ? `<section class="case"><span class="label">Dosya</span><p>${gloss(S.det.olay)}</p>${S.det.olayTr ? `<button class="chip" data-det-tr>Türkçesi</button>${S.detTr ? `<p class="tr" style="color:inherit">${esc(S.det.olayTr)}</p>` : ""}` : ""}</section>` : ""}
     <div class="chat" id="chat">${bubbles}${S.busy ? `<div class="typing">${S.detWait ? "Dosya hazırlanıyor…" : "yazıyor…"}</div>` : ""}</div>
     ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${S.detWait || (S.hist.length === 1 && !S.det) ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
@@ -1267,7 +1340,7 @@ function sohbetSon() {
         ${k.yorum ? `<p style="margin:0">${esc(k.yorum)}</p>` : ""}<p class="muted">Puanlar yapay zekânın tahminidir.</p></section>`;
   return `${karne}<div class="card"><span class="label">Sohbet bitti · ${S.sent} mesaj</span><h3 style="font-size:22px">${S.fixes.length ? "Düzeltmelerin" : "Sohbetin özeti"}</h3>${fixes}${S.fixes.length ? `<p class="muted">Bunlar Defter'e eklendi.</p>` : ""}</div>
     ${yeni.length ? `<div class="card"><span class="label">Defter'e eklenen yeni kelimeler</span><div class="new-words">${yeni.map(([en, tr]) => `<b>${esc(en)}</b><span>${esc(tr)}</span>`).join("")}</div></div>` : ""}
-    ${S.final !== null ? `<button class="btn" data-final="${S.final}">Finali tekrar oyna</button>` : S.zor !== null ? `<button class="btn" data-zor="${S.zor}">Tekrar dene</button>` : ""}
+    ${S.final !== null ? `<button class="btn" data-final="${S.final}">Finali tekrar oyna</button>` : S.rol !== null ? `<button class="btn" data-rol="${S.rol}">Tekrar dene</button>` : S.zor !== null ? `<button class="btn" data-zor="${S.zor}">Tekrar dene</button>` : ""}
     <button class="btn ${karneli() ? "ghost" : ""}" data-go="${S.final !== null ? "home" : "konus"}">${S.final !== null ? "Rotaya dön" : "Yeni sohbet"}</button>`;
 }
 async function karneIste() {
@@ -1276,7 +1349,7 @@ async function karneIste() {
   try {
     // Final üç bölümdür: bölüm başlatma cümleleri Cem'in sözü değildir, karneye girmez
     const gecmis = S.final !== null ? [{}, ...[...S.finalHist, ...S.hist].filter(m => !m.basla)] : S.hist;
-    const k = await SOHBET.karne(anahtar(), S.final !== null ? BOLGELER[S.final].final.baslik : ZOR[S.zor].t, gecmis);
+    const k = await SOHBET.karne(anahtar(), S.final !== null ? BOLGELER[S.final].final.baslik : S.rol !== null ? "Cem plays: " + ROLLER[S.rol].k : ZOR[S.zor].t, gecmis);
     if (id !== serbestRun || S.screen !== "sohbetSon") return;
     S.karne = k; render();
   } catch (e) {
@@ -1291,17 +1364,23 @@ async function serbestIste() {
   Object.assign(S, { busy: true, err: "" }); render();
   try {
     const c = await SOHBET.iste(anahtar(), S.hist, ayar());
-    if (id !== serbestRun || S.screen !== "sohbet") return;
+    if (id !== serbestRun || !sohbette()) return;
     kelimeKaydet(c.words);
     if (c.fix) {
       S.chat.push({ fix: c.fix }); S.fixes.push({ t: c.fix.wrong, fix: c.fix.right, why: c.fix.why });
       DEFTER.hataEkle(DF, c.fix); dfYaz();
     }
     S.hist.push({ role: "model", text: c.reply });
-    S.chat.push({ t: c.reply, tr: c.tr, who: S.final !== null ? finalBolum().who : "" });
-    S.busy = false; render(); speak(c.reply);
+    S.chat.push({ t: c.reply, tr: c.tr, who: konusan() });
+    S.busy = false;
+    if (S.sent && !S.det && S.final === null && S.tel === null) {
+      S.kayitId = S.kayitId || Date.now();
+      DEFTER.sohbetKaydet(DF, { id: S.kayitId, at: Date.now(), topic: S.topic, zor: S.zor, rol: S.rol, odak: S.odak, kar: S.kar, chat: S.chat, hist: S.hist, fixes: S.fixes, sent: S.sent });
+      dfYaz();
+    }
+    render(); speak(c.reply);
   } catch (e) {
-    if (id !== serbestRun || S.screen !== "sohbet") return;
+    if (id !== serbestRun || !sohbette()) return;
     Object.assign(S, { busy: false, err: e.message });
     // Gönderilemeyen mesaj kaybolmasın, yazı kutusuna geri döner
     if (S.hist.length > 1 || S.det) { S.draft = S.hist.pop().text; S.chat.pop(); S.sent--; if (S.final !== null) S.bolumSent--; }
@@ -1309,7 +1388,7 @@ async function serbestIste() {
   }
 }
 function serbestBasla(topic, ek) {
-  Object.assign(S, fresh(), { screen: "sohbet", topic, hist: [{ role: "user", basla: true, text: ek && (ek.zor !== undefined || ek.final !== undefined) ? "Start the scene with your first line." : "Start the chat with one short question." }] }, ek);
+  Object.assign(S, fresh(), { screen: "sohbet", topic, hist: [{ role: "user", basla: true, text: ek && (ek.zor !== undefined || ek.final !== undefined) ? "Start the scene with your first line. Do not repeat this instruction." : "Start the chat with one short question." }] }, ek);
   window.scrollTo({ top: 0 });
   serbestIste();
 }
@@ -1337,7 +1416,7 @@ function serbestDinle() {
   try { speechSynthesis.cancel(); r.start(); } catch (e) { S.listening = false; S.noMic = true; render(); }
 }
 
-const SCREENS = { home, talk, talkEnd, ear, words, finish, konus, sohbet, sohbetSon, defter, av, dinle, hikaye, detSon, dakika };
+const SCREENS = { home, talk, talkEnd, ear, words, finish, konus, sohbet, sohbetSon, defter, av, dinle, hikaye, detSon, dakika, roller, telefon, telSon };
 const NAV_IC = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const NAV = [
   ["home", "Rota", NAV_IC('<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>')],
@@ -1345,12 +1424,12 @@ const NAV = [
   ["defter", "Defter", NAV_IC('<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/>')],
   ["dinle", "Dinle", NAV_IC('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/>')],
 ];
-const NAV_SEKME = { home: "home", konus: "konus", sohbetSon: "konus", detSon: "konus", dakika: "konus", defter: "defter", av: "defter", dinle: "dinle", hikaye: "dinle" }; // yoksa ders ekranıdır: menü gizlenir
+const NAV_SEKME = { home: "home", konus: "konus", sohbetSon: "konus", detSon: "konus", dakika: "konus", roller: "konus", telefon: "konus", telSon: "konus", defter: "defter", av: "defter", dinle: "dinle", hikaye: "dinle" }; // yoksa ders ekranıdır: menü gizlenir
 const nav = document.getElementById("nav");
 function render() {
   hideTip();
   app.innerHTML = SCREENS[S.screen]() + damgaKatman();
-  const sekme = S.screen === "dakika" && S.dk.hal === "akis" ? null : NAV_SEKME[S.screen]; // süre işlerken menüyle çıkılmasın
+  const sekme = (S.screen === "dakika" && S.dk.hal === "akis") || (S.screen === "telefon" && S.tel !== null) ? null : NAV_SEKME[S.screen]; // süre işlerken menüyle çıkılmasın
   nav.hidden = !sekme;
   document.body.classList.toggle("has-nav", !!sekme);
   if (sekme) document.getElementById("nav-ic").innerHTML = NAV.map(([id, ad, ic]) => `<button data-sekme="${id}" ${sekme === id ? 'aria-current="page"' : ""}>${ic}${ad}</button>`).join("");
@@ -1421,11 +1500,31 @@ app.addEventListener("click", e => {
     if (d.go !== S.screen && (d.go === "ear" || d.go === "words")) S.order = [];
     if (d.go === "sohbetSon" || d.go === "dinle") { try { speechSynthesis.cancel(); } catch (x) {} }
     if (d.go === "dakika") S.dk = { hal: "bos" };
+    if (d.go === "telefon") Object.assign(S, fresh());
     S.screen = d.go; render(); window.scrollTo({ top: 0 }); if (d.go === "ear") speak(s.ear[0].say);
     if (d.go === "sohbetSon" && karneli() && S.sent && !S.karne) karneIste();
     return;
   }
   if ("damgaKapa" in d) { S.damga = null; return render(); }
+  if (d.kar) { S.kar = +d.kar; save(); return render(); }
+  if (d.hiz) { S.speed = +d.hiz; save(); return render(); }
+  if (d.gec) {
+    const k = DF.sohbetler[+d.gec];
+    Object.assign(S, fresh(), { screen: "sohbet", topic: k.topic, zor: k.zor ?? null, rol: k.rol ?? null, odak: k.odak || "", kar: k.kar || 0, chat: k.chat, hist: k.hist, fixes: k.fixes || [], sent: k.sent, kayitId: k.id });
+    window.scrollTo({ top: 0 });
+    return render();
+  }
+  if (d.rol) {
+    if (!anahtar()) { S.screen = "konus"; return render(); }
+    return serbestBasla(ROLLER[+d.rol].ad, { rol: +d.rol, zor: null });
+  }
+  if (d.tel) {
+    if (!anahtar()) { S.screen = "konus"; return render(); }
+    return serbestBasla(TELEFON[+d.tel].ad, { screen: "telefon", tel: +d.tel, telBas: Date.now(), zor: null });
+  }
+  if ("telYazi" in d) { if (!S.telYazi) S.telActi++; S.telYazi = !S.telYazi; return render(); }
+  if ("telTekrar" in d) { const m = [...S.chat].reverse().find(x => x.t && !x.you); if (m) speak(m.t); return; }
+  if ("telBitir" in d) { serbestRun++; try { speechSynthesis.cancel(); } catch (x) {} S.listening = false; S.telSure = ""; S.screen = "telSon"; return render(); }
   if (d.lvl) { S.seviye = d.lvl; SOHBET.seviyeAyarla(d.lvl); save(); return render(); }
   if (d.final) {
     if (!anahtar()) { S.screen = "konus"; return render(); }
@@ -1492,7 +1591,7 @@ app.addEventListener("click", e => {
   if (d.tr) { S.tr[d.tr] = !S.tr[d.tr]; return render(); }
   if (d.ans) { const o = s.dialog[S.turn].opts[+d.ans]; return answer(o.t, o); }
   if ("earplay" in d) return speak(s.ear[S.ear].say);
-  if (d.speed) { S.speed = +d.speed; render(); return speak(s.ear[S.ear].say); }
+  if (d.speed) { S.speed = +d.speed; save(); render(); return speak(s.ear[S.ear].say); }
   if (d.ear) { S.earPick = +d.ear; if (s.ear[S.ear].opts[S.earPick] === s.ear[S.ear].say) S.earOk++; return render(); }
   if (d.put) {
     S.built.push(+d.put);
