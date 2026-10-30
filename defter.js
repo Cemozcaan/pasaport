@@ -5,7 +5,7 @@ const DEFTER = (() => {
   const SON_HATA = 30; // hata haritası son düzeltmelere bakar, düzeldikçe çubuk kısalır
   const HATA_SINIR = 200;
 
-  const bos = () => ({ words: {}, fixes: [], stories: [], chats: 0 });
+  const bos = () => ({ words: {}, fixes: [], stories: [], chats: 0, dkSon: 0, dkEn: 0 });
   function yukle(j) {
     const d = bos();
     if (!j || typeof j !== "object") return d;
@@ -15,6 +15,8 @@ const DEFTER = (() => {
     if (Array.isArray(j.fixes)) d.fixes = j.fixes.filter(f => f && typeof f.wrong === "string" && typeof f.right === "string");
     if (Array.isArray(j.stories)) d.stories = j.stories.filter(s => s && typeof s.metin === "string" && Array.isArray(s.sorular));
     if (Number.isInteger(j.chats)) d.chats = j.chats;
+    if (Number.isInteger(j.dkSon)) d.dkSon = j.dkSon;
+    if (Number.isInteger(j.dkEn)) d.dkEn = j.dkEn;
     return d;
   }
   const kelimeEkle = (d, en, tr, simdi) => { if (!Object.hasOwn(d.words, en)) d.words[en] = { tr, box: 0, due: simdi }; };
@@ -47,5 +49,29 @@ const DEFTER = (() => {
     d.fixes.slice(-SON_HATA).forEach(f => { if (f.kind && f.kind !== "Çeviri") say[f.kind] = (say[f.kind] || 0) + 1; });
     return Object.entries(say).sort((a, b) => b[1] - a[1]);
   }
-  return { bos, yukle, kelimeEkle, hataEkle, hikayeEkle, bekleyen, tekrarListesi, cevapla, siklar, hataHaritasi };
+  // Yedek kodu: damgalar + kelimeler + düzeltmeler. Anahtar ve hikâyeler girmez (kod kısa ve dışarı verilebilir kalsın).
+  const ON_EK = "PSP1-";
+  function kodla(d, damgalar) {
+    const yazi = JSON.stringify({ s: damgalar, w: d.words, f: d.fixes, c: d.chats, n: d.dkSon, e: d.dkEn });
+    return ON_EK + btoa(Array.from(new TextEncoder().encode(yazi), b => String.fromCharCode(b)).join(""));
+  }
+  function kodCoz(kod) {
+    const k = String(kod).replace(/\s+/g, "");
+    if (!k.startsWith(ON_EK)) throw new Error("kod değil");
+    const j = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(k.slice(ON_EK.length)), c => c.charCodeAt(0))));
+    const d = yukle({ words: j.w, fixes: j.f, chats: j.c, dkSon: j.n, dkEn: j.e });
+    return { defter: d, damgalar: Array.isArray(j.s) ? j.s.filter(Number.isInteger) : [] };
+  }
+  // Birleştirme hiçbir şey silmez: yerel kelimenin tekrar durumu korunur, eksikler eklenir
+  function birlestir(d, gelen) {
+    let kelime = 0, hataSay = 0;
+    Object.entries(gelen.words).forEach(([en, w]) => { if (!Object.hasOwn(d.words, en)) { d.words[en] = w; kelime++; } });
+    const var_ = new Set(d.fixes.map(f => f.wrong + "|" + f.right));
+    gelen.fixes.forEach(f => { if (!var_.has(f.wrong + "|" + f.right)) { hataEkle(d, f); hataSay++; } });
+    d.chats = Math.max(d.chats, gelen.chats);
+    d.dkEn = Math.max(d.dkEn, gelen.dkEn);
+    if (!d.dkSon) d.dkSon = gelen.dkSon;
+    return { kelime, hata: hataSay };
+  }
+  return { kodla, kodCoz, birlestir, bos, yukle, kelimeEkle, hataEkle, hikayeEkle, bekleyen, tekrarListesi, cevapla, siklar, hataHaritasi };
 })();
