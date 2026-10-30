@@ -1,38 +1,51 @@
-// Serbest Sohbet: Gemini ücretsiz planına istek ve cevabın çözümü. Ekran kodu index.html'de.
+// Yapay zekâ: Gemini ücretsiz planına istekler ve cevapların çözümü (sohbet, zor anlar, karne, hata avı, hikâye). Ekran kodu index.html'de.
 const SOHBET = (() => {
   // Önce en hızlısı; yoksa, sınırı dolduysa ya da geç kalırsa Google'ın güncel takma adına geçilir
   const MODELLER = ["gemini-3.5-flash-lite", "gemini-flash-latest"];
   const SURE_MS = 20000;
   const adres = m => `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`;
   const SON_MESAJ = 29; // tek sayı: gönderilen geçmiş hep kullanıcının mesajıyla başlar
+  const TURLER = ["Geçmiş zaman", "Geniş / şimdiki zaman", "Gelecek zaman", "The / a", "Edatlar", "Kelime seçimi", "Soru kurma", "Diğer"];
 
-  const talimat = konu => `You are a friendly English conversation partner for Cem, a Turkish adult at B1 (intermediate) level. Topic: ${konu}. If Cem changes the topic, follow him.
-Reply in natural everyday English, 1 to 3 short sentences, and usually end with one question. Use B1-level words.
-Fields:
+  const ortak = `Fields:
 - reply: your English message.
 - tr: Turkish translation of reply.
-- fix: fill it only if Cem's last message has a real grammar or word-choice mistake, otherwise null. Ignore capital letters, punctuation and small typos, because he may be using voice input. wrong = the wrong part, right = the corrected part, why = one short, simple Turkish explanation.
-- If Cem writes in Turkish or asks how to say something: fix.wrong = his text, fix.right = how to say it in English, fix.why = "Bunu böyle söyleyebilirsin." Then continue the chat in reply.
+- fix: fill it only if Cem's last message has a real grammar or word-choice mistake, otherwise null. Ignore capital letters, punctuation and small typos, because he may be using voice input. wrong = the wrong part, right = the corrected part, why = one short, simple Turkish explanation, kind = exactly one of: ${TURLER.join(", ")}.
+- If Cem writes in Turkish or asks how to say something: fix.wrong = his text, fix.right = how to say it in English, fix.why = "Bunu böyle söyleyebilirsin.", fix.kind = "Çeviri". Then continue the chat in reply.
 - words: at most 6 words from reply or fix.right that a B1 learner may not know, lowercase, with a short Turkish meaning in this context. Skip names and common words.
 On the very first message there is nothing to correct: fix = null.`;
 
+  function talimat(ayar) {
+    if (ayar.karakter) return `Role-play with Cem, a Turkish adult at B1 (intermediate) level who is practising difficult real-life situations in English. ${ayar.karakter}
+Stay in character and do not make it too easy: react to his tone and to what he actually says. Speak in natural English, 1 to 3 short sentences, using B1-level words.
+${ortak}`;
+    return `You are a friendly English conversation partner for Cem, a Turkish adult at B1 (intermediate) level. Topic: ${ayar.konu}. If Cem changes the topic, follow him.
+${ayar.odak ? `Ask questions that make him use this grammar point: ${ayar.odak}. Watch for mistakes in it.\n` : ""}Reply in natural everyday English, 1 to 3 short sentences, and usually end with one question. Use B1-level words.
+${ortak}`;
+  }
+
+  const metin = { type: "STRING" };
   const SEMA = {
     type: "OBJECT", required: ["reply", "tr", "words"],
     properties: {
-      reply: { type: "STRING" }, tr: { type: "STRING" },
-      fix: { type: "OBJECT", nullable: true, required: ["wrong", "right", "why"], properties: { wrong: { type: "STRING" }, right: { type: "STRING" }, why: { type: "STRING" } } },
-      words: { type: "ARRAY", items: { type: "OBJECT", required: ["en", "tr"], properties: { en: { type: "STRING" }, tr: { type: "STRING" } } } },
+      reply: metin, tr: metin,
+      fix: { type: "OBJECT", nullable: true, required: ["wrong", "right", "why", "kind"], properties: { wrong: metin, right: metin, why: metin, kind: metin } },
+      words: { type: "ARRAY", items: { type: "OBJECT", required: ["en", "tr"], properties: { en: metin, tr: metin } } },
     },
   };
+  const ayarlar = (sema, sicaklik) => ({ responseMimeType: "application/json", responseSchema: sema, temperature: sicaklik });
 
-  const istekGovdesi = (gecmis, konu) => ({
-    systemInstruction: { parts: [{ text: talimat(konu) }] },
+  const istekGovdesi = (gecmis, ayar) => ({
+    systemInstruction: { parts: [{ text: talimat(ayar) }] },
     contents: gecmis.slice(-SON_MESAJ).map(m => ({ role: m.role, parts: [{ text: m.text }] })),
-    generationConfig: { responseMimeType: "application/json", responseSchema: SEMA, temperature: 0.8 },
+    generationConfig: ayarlar(SEMA, 0.8),
   });
+  const tekIstek = (yazi, sema, sicaklik) => ({ contents: [{ role: "user", parts: [{ text: yazi }] }], generationConfig: ayarlar(sema, sicaklik) });
 
   // Yapay zekâdan gelen her alan denetlenir; eksik ya da bozuksa yok sayılır
   const dolu = x => typeof x === "string" && x.trim() !== "";
+  const kelimeler = w => (Array.isArray(w) ? w : []).filter(x => x && dolu(x.en) && dolu(x.tr) && /^[a-zé'’-]+$/i.test(x.en.trim()))
+    .map(x => [x.en.trim().toLowerCase().replace(/’/g, "'"), x.tr.trim()]);
   function coz(ham) {
     const j = JSON.parse(ham);
     if (!dolu(j.reply)) throw new Error("boş cevap");
@@ -40,11 +53,46 @@ On the very first message there is nothing to correct: fix = null.`;
     return {
       reply: j.reply.trim(),
       tr: dolu(j.tr) ? j.tr.trim() : "",
-      fix: f && dolu(f.wrong) && dolu(f.right) && f.wrong.trim() !== f.right.trim() ? { wrong: f.wrong.trim(), right: f.right.trim(), why: dolu(f.why) ? f.why.trim() : "" } : null,
-      words: (Array.isArray(j.words) ? j.words : []).filter(w => w && dolu(w.en) && dolu(w.tr) && /^[a-zé'’-]+$/i.test(w.en.trim()))
-        .map(w => [w.en.trim().toLowerCase().replace(/’/g, "'"), w.tr.trim()]),
+      fix: f && dolu(f.wrong) && dolu(f.right) && f.wrong.trim() !== f.right.trim()
+        ? { wrong: f.wrong.trim(), right: f.right.trim(), why: dolu(f.why) ? f.why.trim() : "", kind: f.kind === "Çeviri" || TURLER.includes(f.kind) ? f.kind : "Diğer" } : null,
+      words: kelimeler(j.words),
     };
   }
+  // Üç şıklı soru: şıklar farklı ve cevap geçerli değilse soru atılır
+  const soruMu = q => q && dolu(q.q) && Array.isArray(q.o) && q.o.length === 3 && q.o.every(dolu) && new Set(q.o).size === 3 && Number.isInteger(q.a) && q.a >= 0 && q.a <= 2;
+
+  const SORU = { type: "OBJECT", required: ["q", "o", "a"], properties: { q: metin, o: { type: "ARRAY", items: metin }, a: { type: "INTEGER" }, why: metin } };
+  const AV_SEMA = { type: "OBJECT", required: ["sorular"], properties: { sorular: { type: "ARRAY", items: SORU } } };
+  function avCoz(ham) {
+    const l = JSON.parse(ham).sorular;
+    const iyi = (Array.isArray(l) ? l : []).filter(q => soruMu(q) && q.q.includes("___"));
+    if (iyi.length < 3) throw new Error("az soru");
+    return iyi.slice(0, 6);
+  }
+  const avIstegi = (tur, ornekler) => tekIstek(`Write 6 multiple-choice English grammar questions for a Turkish B1 learner about: ${tur}.
+Each q is one everyday English sentence with one gap written as ___. o = exactly 3 different options, a = index (0-2) of the only correct option, why = one short simple Turkish explanation.
+${ornekler.length ? "His real mistakes, use similar situations:\n" + ornekler.map(f => `- ${f.wrong} -> ${f.right}`).join("\n") : ""}`, AV_SEMA, 0.7);
+
+  const KARNE_SEMA = { type: "OBJECT", required: ["baslik", "netlik", "kibarlik", "dil", "yorum"], properties: { baslik: metin, netlik: { type: "INTEGER" }, kibarlik: { type: "INTEGER" }, dil: { type: "INTEGER" }, yorum: metin } };
+  function karneCoz(ham) {
+    const j = JSON.parse(ham);
+    const puan = x => { if (!Number.isFinite(x)) throw new Error("puan yok"); return Math.max(0, Math.min(100, Math.round(x))); };
+    if (!dolu(j.baslik)) throw new Error("başlık yok");
+    return { baslik: j.baslik.trim(), netlik: puan(j.netlik), kibarlik: puan(j.kibarlik), dil: puan(j.dil), yorum: dolu(j.yorum) ? j.yorum.trim() : "" };
+  }
+  const karneIstegi = (ad, gecmis) => tekIstek(`Cem, a Turkish B1 English learner, practised this situation: ${ad}. Conversation (his lines start with Cem):
+${gecmis.slice(1).map(m => (m.role === "user" ? "Cem: " : "Other: ") + m.text).join("\n")}
+Grade only Cem's lines, honestly and from 0 to 100: netlik (clear), kibarlik (polite and suitable tone), dil (grammar and words). baslik = one short encouraging Turkish sentence. yorum = two short Turkish sentences: what went well, and one concrete thing to try next time.`, KARNE_SEMA, 0.3);
+
+  const HIKAYE_SEMA = { type: "OBJECT", required: ["baslik", "metin", "sorular", "words"], properties: { baslik: metin, metin, sorular: { type: "ARRAY", items: SORU }, words: { type: "ARRAY", items: SEMA.properties.words.items } } };
+  function hikayeCoz(ham) {
+    const j = JSON.parse(ham);
+    const qs = (Array.isArray(j.sorular) ? j.sorular : []).filter(soruMu);
+    if (!dolu(j.baslik) || !dolu(j.metin) || !qs.length) throw new Error("eksik hikâye");
+    return { baslik: j.baslik.trim(), metin: j.metin.trim(), sorular: qs.slice(0, 4), words: kelimeler(j.words) };
+  }
+  const hikayeIstegi = konu => tekIstek(`Write a new, original, surprising short story in English for a Turkish B1 learner. Theme: ${konu}. 90 to 130 words, simple past mostly, B1-level words.
+baslik = English title. metin = the story. sorular = 3 comprehension questions written in Turkish: q = question, o = exactly 3 different Turkish options, a = index (0-2) of the correct one. words = up to 8 story words a B1 learner may not know, lowercase, with short Turkish meanings.`, HIKAYE_SEMA, 1);
 
   function hata(durum, mesaj) {
     if (durum === 401 || durum === 403 || (durum === 400 && /api.?key/i.test(mesaj || ""))) return "Anahtar kabul edilmedi. Doğru kopyaladığını kontrol et ya da anahtarı değiştir.";
@@ -53,12 +101,12 @@ On the very first message there is nothing to correct: fix = null.`;
     return "Cevap alınamadı (hata " + durum + "). Tekrar dene.";
   }
 
-  async function iste(anahtar, gecmis, konu) {
+  async function cagir(anahtar, govde, cozucu) {
     let y;
     for (const [i, model] of MODELLER.entries()) {
       const son = i === MODELLER.length - 1;
       try {
-        y = await fetch(adres(model), { method: "POST", signal: son ? undefined : AbortSignal.timeout(SURE_MS), headers: { "Content-Type": "application/json", "x-goog-api-key": anahtar }, body: JSON.stringify(istekGovdesi(gecmis, konu)) });
+        y = await fetch(adres(model), { method: "POST", signal: son ? undefined : AbortSignal.timeout(SURE_MS), headers: { "Content-Type": "application/json", "x-goog-api-key": anahtar }, body: JSON.stringify(govde) });
       } catch (e) {
         if (!son && e.name === "TimeoutError") continue;
         throw new Error("İnternete bağlanılamadı. Bağlantını kontrol edip tekrar dene.");
@@ -72,11 +120,17 @@ On the very first message there is nothing to correct: fix = null.`;
     }
     try {
       const j = await y.json();
-      return coz(j.candidates[0].content.parts.map(p => p.text).join(""));
+      return cozucu(j.candidates[0].content.parts.map(p => p.text).join(""));
     } catch (e) {
       throw new Error("Cevap anlaşılamadı. Tekrar dene.");
     }
   }
 
-  return { iste, coz, hata, istekGovdesi };
+  return {
+    TURLER, coz, avCoz, karneCoz, hikayeCoz, hata, istekGovdesi,
+    iste: (anahtar, gecmis, ayar) => cagir(anahtar, istekGovdesi(gecmis, ayar), coz),
+    av: (anahtar, tur, ornekler) => cagir(anahtar, avIstegi(tur, ornekler), avCoz),
+    karne: (anahtar, ad, gecmis) => cagir(anahtar, karneIstegi(ad, gecmis), karneCoz),
+    hikaye: (anahtar, konu) => cagir(anahtar, hikayeIstegi(konu), hikayeCoz),
+  };
 })();
