@@ -180,7 +180,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .mega small { display: block; font-family: var(--f-mono); font-size: 12px; font-weight: 500; letter-spacing: .1em; margin-top: 4px; }
 @keyframes bas { from { transform: rotate(-10deg) scale(1.9); opacity: 0; } 70% { transform: rotate(-10deg) scale(.96); opacity: 1; } to { transform: rotate(-10deg) scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .mega { animation: none; } }
-.w.hedef { background: color-mix(in srgb, var(--accent) 35%, transparent); font-weight: 700; }
 .cumle.okunan { background: color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 3px; }
 .kel.okunan { background: color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 3px; }
 .seg.uc { grid-template-columns: repeat(3, 1fr); }
@@ -566,7 +565,7 @@ Object.assign(DICT, SOZLUK_EK);
 Object.setPrototypeOf(DICT, null); // sohbette "constructor" gibi bir kelime geçerse sözlükte varmış sanılmasın
 
 const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false, final: null, bolum: 0, bolumSent: 0, finalHist: [], rol: null, tel: null, telYazi: false, telActi: 0, telBas: 0, kayitId: 0 });
-const S = Object.assign({ kat: 0, ayarAc: "", takip: false, sonHedef: [], kar: 0, seviye: "B1", finaller: [], damga: null, dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
+const S = Object.assign({ kat: 0, ayarAc: "", takip: false, kar: 0, seviye: "B1", finaller: [], damga: null, dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
 const app = document.getElementById("app");
 const tip = document.getElementById("tip");
 const sc = () => SCENES[S.cur];
@@ -576,12 +575,12 @@ const next = () => SCENES.findIndex((s, i) => !S.stamped.includes(i));
 const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const norm = s => s.toLowerCase().replace(/[’]/g, "'").replace(/[^a-z0-9' -]/g, "").replace(/\s+/g, " ").trim();
 // İngilizce metni kelime kelime sarar; sözlükte olanın üstüne gelince Türkçesi çıkar
-function gloss(text, hedef) {
+function gloss(text) {
   return text.split(/(\s+)/).map(tok => {
     const m = tok.match(/^([^A-Za-zé']*)([A-Za-zé'’-]+)([^A-Za-zé']*)$/);
     if (!m) return esc(tok);
     const key = m[2].toLowerCase().replace(/’/g, "'");
-    return DICT[key] ? `${esc(m[1])}<span class="w${hedef && hedef.includes(key) ? " hedef" : ""}" data-w="${esc(key)}">${esc(m[2])}</span>${esc(m[3])}` : esc(tok);
+    return DICT[key] ? `${esc(m[1])}<span class="w" data-w="${esc(key)}">${esc(m[2])}</span>${esc(m[3])}` : esc(tok);
   }).join("");
 }
 
@@ -978,7 +977,7 @@ const FINAL_MESAJ = 4; // her final bölümünde kullanıcı mesajı
 const finalBolum = () => BOLGELER[S.final].final.bolumler[S.bolum];
 const karneli = () => S.zor !== null || S.final !== null || S.rol !== null;
 const ayar = () => S.final !== null ? { karakter: finalBolum().k } : S.det ? { karakter: SOHBET.tanik(S.det) } : S.zor !== null ? { karakter: ZOR[S.zor].k }
-  : S.rol !== null ? { karakter: ROLLER[S.rol].k } : S.tel !== null ? { karakter: TELEFON[S.tel].k + " This is a phone call, so keep every line short and clear." } : { konu: S.topic, odak: S.odak, tarz: KARAKTER[S.kar].tarz, hedef: DEFTER.tekrarListesi(DF, Date.now(), 3).filter(en => DF.words[en].due <= Date.now()) };
+  : S.rol !== null ? { karakter: ROLLER[S.rol].k } : S.tel !== null ? { karakter: TELEFON[S.tel].k + " This is a phone call, so keep every line short and clear." } : { konu: S.topic, odak: S.odak, tarz: KARAKTER[S.kar].tarz };
 const konusan = () => S.final !== null ? finalBolum().who : S.rol !== null ? ROLLER[S.rol].kar : S.tel !== null ? TELEFON[S.tel].ad : S.zor === null && !S.det && S.kar ? KARAKTER[S.kar].ad : "";
 const DET_SORU = 10;
 const DK_KONU = ["Sana en çok zaman kazandıran alışkanlık", "Çocukluğundan unutamadığın bir gün", "Şehrinde en sevdiğin yer", "Yakın zamanda seni güldüren bir şey", "Bir milyon doların olsa ne yapardın", "En son izlediğin film ya da dizi", "İşinin en zor tarafı", "Hayalindeki tatil", "En sevdiğin yemek ve nasıl yapıldığı", "Daha iyi yapmak istediğin bir şey", "Hayatını kolaylaştıran bir teknoloji", "Sana bir şey öğreten bir hata"];
@@ -1352,8 +1351,8 @@ function sohbet() {
   const bubbles = S.chat.map((m, i) => {
     if (m.fix) return `<div class="fix-line"><div class="fix"><s>${esc(m.fix.wrong)}</s><b>${gloss(m.fix.right)}</b>${m.fix.why ? `<small>${esc(m.fix.why)}</small>` : ""}</div></div>`;
     if (m.you) return `<div class="msg you"><div class="who">Sen</div>${gloss(m.t)}</div>`;
-    if (m.ilerleme) return `<div class="fix-line"><div class="fix"><b>${esc(m.ilerleme.join(", "))} ilerledi</b><small>Cümlende kullandın, bu kelime daha seyrek gelecek.</small></div></div>`;
-    return `<div class="msg them"><div class="who">${m.who || (S.det ? "Tanık" : S.zor !== null ? ZOR[S.zor].who : "Sohbet arkadaşın")}</div>${gloss(m.t, m.hedef)}
+    if (m.ilerleme) return ""; // o özellik varken kaydedilmiş eski sohbetlerdeki satırlar
+    return `<div class="msg them"><div class="who">${m.who || (S.det ? "Tanık" : S.zor !== null ? ZOR[S.zor].who : "Sohbet arkadaşın")}</div>${gloss(m.t)}
       <div class="msg-tools">${quiet() ? "" : `<button class="chip" data-say="${i}">${ICON.play} Dinle</button>`}${m.tr ? `<button class="chip" data-tr="${i}">Türkçesi</button>` : ""}</div>
       ${S.tr[i] ? `<div class="tr">${esc(m.tr)}</div>` : ""}</div>`;
   }).join("");
@@ -1407,23 +1406,15 @@ async function serbestIste() {
   const id = ++serbestRun;
   Object.assign(S, { busy: true, err: "" }); render();
   try {
-    const a = ayar(), oncekiHedef = S.sonHedef;
-    S.sonHedef = a.hedef || [];
-    const c = await SOHBET.iste(anahtar(), S.hist, a);
+    const c = await SOHBET.iste(anahtar(), S.hist, ayar());
     if (id !== serbestRun || !sohbette()) return;
     kelimeKaydet(c.words);
-    // Yalnız sorulan kelimeler sayılır: yapay zekâ başka bir şey dese de Defter bozulmaz
-    const kullandi = S.sent ? c.used.filter(en => (oncekiHedef.includes(en) || S.sonHedef.includes(en)) && Object.hasOwn(DF.words, en)) : [];
-    if (kullandi.length) {
-      kullandi.forEach(en => DEFTER.cevapla(DF, en, true, Date.now()));
-      S.chat.push({ ilerleme: kullandi }); dfYaz();
-    }
     if (c.fix) {
       S.chat.push({ fix: c.fix }); S.fixes.push({ t: c.fix.wrong, fix: c.fix.right, why: c.fix.why });
       DEFTER.hataEkle(DF, c.fix); dfYaz();
     }
     S.hist.push({ role: "model", text: c.reply });
-    S.chat.push({ t: c.reply, tr: c.tr, who: konusan(), hedef: S.sonHedef });
+    S.chat.push({ t: c.reply, tr: c.tr, who: konusan() });
     S.busy = false;
     if (S.sent && !S.det && S.final === null && S.tel === null) {
       S.kayitId = S.kayitId || Date.now();
