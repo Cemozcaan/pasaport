@@ -6,13 +6,14 @@ const DEFTER = (() => {
   const HATA_SINIR = 200;
 
   const SOHBET_SINIR = 20;
-  const bos = () => ({ words: {}, fixes: [], stories: [], chats: 0, dkSon: 0, dkEn: 0, sohbetler: [] });
+  const bos = () => ({ words: {}, fixes: [], stories: [], chats: 0, dkSon: 0, dkEn: 0, sohbetler: [], silinen: [] });
   function yukle(j) {
     const d = bos();
     if (!j || typeof j !== "object") return d;
     if (j.words && typeof j.words === "object") Object.entries(j.words).forEach(([en, w]) => {
-      if (w && typeof w.tr === "string") d.words[en] = { tr: w.tr, box: Number.isInteger(w.box) ? Math.min(Math.max(w.box, 0), ARALIK.length - 1) : 0, due: Number.isFinite(w.due) ? w.due : 0 };
+      if (w && typeof w.tr === "string") d.words[en] = { tr: w.tr, box: Number.isInteger(w.box) ? Math.min(Math.max(w.box, 0), ARALIK.length - 1) : 0, due: Number.isFinite(w.due) ? w.due : 0, bildi: w.bildi === true };
     });
+    if (Array.isArray(j.silinen)) d.silinen = j.silinen.filter(x => typeof x === "string");
     if (Array.isArray(j.fixes)) d.fixes = j.fixes.filter(f => f && typeof f.wrong === "string" && typeof f.right === "string");
     if (Array.isArray(j.stories)) d.stories = j.stories.filter(s => s && typeof s.metin === "string" && Array.isArray(s.sorular));
     if (Array.isArray(j.sohbetler)) d.sohbetler = j.sohbetler.filter(s => s && Array.isArray(s.chat) && Array.isArray(s.hist) && typeof s.topic === "string");
@@ -21,7 +22,12 @@ const DEFTER = (() => {
     if (Number.isInteger(j.dkEn)) d.dkEn = j.dkEn;
     return d;
   }
-  const kelimeEkle = (d, en, tr, simdi) => { if (!Object.hasOwn(d.words, en)) d.words[en] = { tr, box: 0, due: simdi }; };
+  const kelimeEkle = (d, en, tr, simdi) => { if (!Object.hasOwn(d.words, en) && !d.silinen.includes(en)) d.words[en] = { tr, box: 0, due: simdi, bildi: false }; };
+  // Silinen kelime hatırlanır: sohbet ya da durak onu kendiliğinden geri getirmesin. Elle eklenirse silinenden çıkar.
+  function kelimeSil(d, en) { delete d.words[en]; if (!d.silinen.includes(en)) d.silinen.push(en); }
+  function kelimeGeriAl(d, en) { d.silinen = d.silinen.filter(x => x !== en); }
+  function kelimeAnlam(d, en, tr) { if (Object.hasOwn(d.words, en) && tr.trim()) d.words[en].tr = tr.trim(); }
+  function kelimeBildi(d, en, bildi) { if (Object.hasOwn(d.words, en)) d.words[en].bildi = bildi; }
   function hataEkle(d, f) { d.fixes.push(f); if (d.fixes.length > HATA_SINIR) d.fixes.shift(); }
   function hikayeEkle(d, s) { d.stories.unshift(s); d.stories.length = Math.min(d.stories.length, 5); }
 
@@ -29,10 +35,11 @@ const DEFTER = (() => {
   function sohbetKaydet(d, k) {
     d.sohbetler = [k, ...d.sohbetler.filter(s => s.id !== k.id)].slice(0, SOHBET_SINIR);
   }
-  const bekleyen = (d, simdi) => Object.keys(d.words).filter(en => d.words[en].due <= simdi);
+  const sohbetSil = (d, id) => { d.sohbetler = d.sohbetler.filter(s => s.id !== id); };
+  const bekleyen = (d, simdi) => Object.keys(d.words).filter(en => !d.words[en].bildi && d.words[en].due <= simdi);
   // Önce vakti gelenler, en düşük kutudan; bekleme yok: vakti gelen azsa en yakın vadeliler eklenir
   function tekrarListesi(d, simdi, adet) {
-    return Object.keys(d.words).sort((a, b) => {
+    return Object.keys(d.words).filter(en => !d.words[en].bildi).sort((a, b) => {
       const A = d.words[a], B = d.words[b], ga = A.due <= simdi, gb = B.due <= simdi;
       return ga !== gb ? (ga ? -1 : 1) : ga ? A.box - B.box : A.due - B.due;
     }).slice(0, adet);
@@ -71,7 +78,7 @@ const DEFTER = (() => {
   // Birleştirme hiçbir şey silmez: yerel kelimenin tekrar durumu korunur, eksikler eklenir
   function birlestir(d, gelen) {
     let kelime = 0, hataSay = 0;
-    Object.entries(gelen.words).forEach(([en, w]) => { if (!Object.hasOwn(d.words, en)) { d.words[en] = w; kelime++; } });
+    Object.entries(gelen.words).forEach(([en, w]) => { if (!Object.hasOwn(d.words, en) && !d.silinen.includes(en)) { d.words[en] = w; kelime++; } });
     const var_ = new Set(d.fixes.map(f => f.wrong + "|" + f.right));
     gelen.fixes.forEach(f => { if (!var_.has(f.wrong + "|" + f.right)) { hataEkle(d, f); hataSay++; } });
     d.chats = Math.max(d.chats, gelen.chats);
@@ -79,5 +86,5 @@ const DEFTER = (() => {
     if (!d.dkSon) d.dkSon = gelen.dkSon;
     return { kelime, hata: hataSay };
   }
-  return { sohbetKaydet, kodla, kodCoz, birlestir, bos, yukle, kelimeEkle, hataEkle, hikayeEkle, bekleyen, tekrarListesi, cevapla, siklar, hataHaritasi };
+  return { kelimeSil, kelimeGeriAl, kelimeAnlam, kelimeBildi, sohbetSil, sohbetKaydet, kodla, kodCoz, birlestir, bos, yukle, kelimeEkle, hataEkle, hikayeEkle, bekleyen, tekrarListesi, cevapla, siklar, hataHaritasi };
 })();
