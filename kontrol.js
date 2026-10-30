@@ -174,6 +174,16 @@ assert.strictEqual(DEFTER.kodCoz(DEFTER.kodla(gc, [], [])).defter.sohbetler.leng
 // Sohbet karakteri talimata girer
 assert.ok(/personality: ciddi/.test(SOHBET.istekGovdesi(uzun, { konu: "x", tarz: "ciddi" }).systemInstruction.parts[0].text));
 assert.ok(!/personality/.test(SOHBET.istekGovdesi(uzun, { konu: "x" }).systemInstruction.parts[0].text));
+// Defter sohbete girer: hedef kelimeler talimatta, kullanılanlar çözülür
+assert.ok(/reviewing these words: refund, delay/.test(SOHBET.istekGovdesi(uzun, { konu: "x", hedef: ["refund", "delay"] }).systemInstruction.parts[0].text));
+assert.ok(!/reviewing/.test(SOHBET.istekGovdesi(uzun, { konu: "x", hedef: [] }).systemInstruction.parts[0].text));
+assert.strictEqual(SOHBET.coz(JSON.stringify({ reply: "Hi", used: ["refund", 5, ""] })).used.join(), "refund");
+assert.strictEqual(SOHBET.coz(JSON.stringify({ reply: "Hi" })).used.length, 0);
+// Sık kalıplar: en az 50, tekrarsız, Türkçeli
+const KL = vm.runInContext("KALIPLAR", ctx), klHepsi = KL.flatMap(k => k.l);
+assert.ok(klHepsi.length >= 50, "en az 50 kalıp");
+assert.strictEqual(new Set(klHepsi.map(x => x[0])).size, klHepsi.length, "aynı kalıp iki kez");
+klHepsi.forEach(x => assert.ok(x[0] && x[1], "eksik kalıp"));
 // Seviye: yapay zekâ talimatına girer
 SOHBET.seviyeAyarla("B2");
 assert.ok(/at B2 level/.test(SOHBET.istekGovdesi(uzun, { konu: "x" }).systemInstruction.parts[0].text));
