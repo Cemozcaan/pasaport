@@ -180,6 +180,17 @@ button.stop:hover b { text-decoration: underline; text-underline-offset: 3px; }
 .stats b { display: block; font-family: var(--f-display); font-size: 26px; font-variant-numeric: tabular-nums; }
 .stats span { font-size: 12px; color: var(--muted); }
 .note { font-size: 13px; color: var(--muted); text-align: center; margin: 0; }
+
+/* Serbest Sohbet */
+.fix-line { align-self: flex-end; max-width: 88%; background: var(--paper); border-radius: 12px; padding: 10px 14px; }
+.typing { color: var(--muted); font-size: 14px; font-style: italic; }
+.err { background: var(--bad-bg); border: 1.5px solid var(--bad); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.scene-head .chip { flex: none; }
+.steps-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.card a { color: inherit; font-weight: 700; }
+.card input { width: 100%; border: 1.5px solid var(--line); background: var(--paper-2); border-radius: 12px; padding: 12px 14px; font-size: 16px; }
+.new-words { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; }
+.new-words b { font-family: var(--f-display); }
 </style>
 </head>
 <body>
@@ -195,6 +206,7 @@ button.stop:hover b { text-decoration: underline; text-underline-offset: 3px; }
 <script src="duraklar/4.js"></script>
 <script src="duraklar/5.js"></script>
 <script src="duraklar/sozluk.js"></script>
+<script src="sohbet.js"></script>
 <script>
 const ICON = {
   mic: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
@@ -443,8 +455,9 @@ const SCENES = [
 
 SCENES.push(...EK);
 Object.assign(DICT, SOZLUK_EK);
+Object.setPrototypeOf(DICT, null); // sohbette "constructor" gibi bir kelime geçerse sözlükte varmış sanılmasın
 
-const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [] });
+const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0 });
 const S = Object.assign({ screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false }, fresh());
 const app = document.getElementById("app");
 const tip = document.getElementById("tip");
@@ -640,6 +653,7 @@ function home() {
   ${n >= 0 ? `<div><p class="label" style="margin:0 0 4px">Sıradaki durak</p><h1 style="font-size:34px;line-height:1.05">${S.stamped.length ? "Devam etmeye hazırsın." : "İlk yolculuğun hazır."}</h1></div>
     ${ticket(n, true)}<button class="btn" data-start="${n}">Yolculuğa başla</button>`
   : `<div class="card"><span class="label">Rota tamam</span><h3 style="font-size:22px">Bütün durakları damgaladın.</h3><p class="muted">Yeni duraklar için Claude'a "Pasaport'a yeni durak ekle" yazman yeter. Bu arada istediğin durağa dokunup tekrar oynayabilirsin.</p></div>`}
+  <div class="card"><span class="label">Senaryo yok · süre yok</span><h3 style="font-size:22px">Serbest Sohbet</h3><p class="muted">İstediğin konuda yapay zekâyla konuş, hatalarını Türkçe öğren.</p><button class="btn ghost" data-go="serbest">Sohbet aç</button></div>
   <div class="route">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px"><h3 style="font-size:18px">Rotan</h3><span class="label">Bekleme yok</span></div>
     ${stops}
@@ -743,13 +757,121 @@ function finish() {
     <button class="btn ghost" data-go="home">Rotaya dön</button>`;
 }
 
-const SCREENS = { home, talk, talkEnd, ear, words, finish };
+// Serbest Sohbet: anahtar yalnız bu cihazda durur, hiçbir dosyaya ya da siteye yazılmaz
+const anahtar = () => { try { return localStorage.getItem("pasaport-anahtar") || ""; } catch (e) { return ""; } };
+function anahtarYaz(v) { try { v ? localStorage.setItem("pasaport-anahtar", v) : localStorage.removeItem("pasaport-anahtar"); } catch (e) {} }
+const KONULAR = ["Hafta sonu", "İş günü", "Filmler ve diziler", "Yemek", "Seyahat", "Futbol"];
+const backBtn = `<button class="chip" data-go="home">← Rota</button>`;
+
+function keyScreen() {
+  return `<div class="top">${backBtn}</div>
+    <div class="card"><span class="label">Bir kez yapılır · ücretsiz</span>
+      <h2 style="font-size:28px;line-height:1.08">Sohbeti aç</h2>
+      <ol class="steps-list">
+        <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google'ın anahtar sayfasını</a> aç, Google hesabınla gir.</li>
+        <li>"Create API key" düğmesine bas. Kart isterse dur, girme.</li>
+        <li>Anahtarı kopyala, buraya yapıştır.</li>
+      </ol>
+      <form class="compose" id="anahtar-form"><input id="anahtar" autocomplete="off" spellcheck="false" aria-label="Anahtar" placeholder="Anahtarı yapıştır"><button type="submit">Kaydet</button></form>
+      <p class="muted">Anahtar yalnız bu cihazda saklanır. Telefon ve bilgisayarda birer kez girersin.</p>
+      <p class="muted">Sohbette şifre, müşteri bilgisi ya da özel bilgi paylaşma: ücretsiz planda yazdıkların servisin geliştirilmesinde kullanılabilir.</p>
+    </div>`;
+}
+function serbest() {
+  if (!anahtar()) return keyScreen();
+  return `<div class="top">${backBtn}<button class="chip" data-key-del>Anahtarı değiştir</button></div>
+    ${modeSwitch()}
+    <div class="card"><span class="label">Serbest Sohbet</span>
+      <h2 style="font-size:28px;line-height:1.08">Bugün ne konuşalım?</h2>
+      <div class="hints">${KONULAR.map(k => `<button class="chip" data-topic="${k}">${k}</button>`).join("")}</div>
+      <form class="compose" id="konu-form"><input id="konu" maxlength="120" autocomplete="off" aria-label="Kendi konun" placeholder="Ya da kendi konunu yaz"><button type="submit">Başla</button></form>
+      <p class="muted">Takılırsan Türkçe yaz, İngilizcesini söylesin.</p>
+    </div>`;
+}
+function sohbet() {
+  const bubbles = S.chat.map((m, i) => {
+    if (m.fix) return `<div class="fix-line"><div class="fix"><s>${esc(m.fix.wrong)}</s><b>${gloss(m.fix.right)}</b>${m.fix.why ? `<small>${esc(m.fix.why)}</small>` : ""}</div></div>`;
+    if (m.you) return `<div class="msg you"><div class="who">Sen</div>${gloss(m.t)}</div>`;
+    return `<div class="msg them"><div class="who">Sohbet arkadaşın</div>${gloss(m.t)}
+      <div class="msg-tools">${quiet() ? "" : `<button class="chip" data-say="${i}">${ICON.play} Dinle</button>`}${m.tr ? `<button class="chip" data-tr="${i}">Türkçesi</button>` : ""}</div>
+      ${S.tr[i] ? `<div class="tr">${esc(m.tr)}</div>` : ""}</div>`;
+  }).join("");
+  const mic = quiet() ? "" : S.listening
+    ? `<div class="mic-row"><button class="mic listening" aria-label="Dinliyor">${ICON.mic}</button><p><b>Dinliyorum…</b> Şimdi söyle.</p></div>`
+    : `<div class="mic-row"><button class="mic" data-free-mic aria-label="Konuşmak için bas">${ICON.mic}</button><p>${S.noMic || !SR ? "Bu ekranda mikrofon açılamıyor, yazarak devam et." : "Bas ve söyle ya da aşağıya yaz."}</p></div>`;
+  return `<div class="top">${backBtn}<button class="chip" data-mode="${quiet() ? "sesli" : "sessiz"}">${quiet() ? ICON.mute + " Sessiz" : ICON.sound + " Sesli"}</button></div>
+    <div class="scene-head"><h3>${esc(S.topic)}</h3><button class="chip" data-go="sohbetSon">Sohbeti bitir</button></div>
+    <div class="chat" id="chat">${bubbles}${S.busy ? `<div class="typing">yazıyor…</div>` : ""}</div>
+    ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${!S.chat.length ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
+    <div class="dock">${mic}
+      <form class="compose" id="serbest-form"><input id="serbest" autocomplete="off" autocapitalize="sentences" aria-label="Mesajın" placeholder="Type your message…" value="${esc(S.draft)}"><button type="submit">Gönder</button></form>
+    </div>`;
+}
+function sohbetSon() {
+  const fixes = S.fixes.length
+    ? S.fixes.map(f => `<div class="fix"><s>${esc(f.t)}</s><b>${gloss(f.fix)}</b>${f.why ? `<small>${esc(f.why)}</small>` : ""}</div>`).join("")
+    : `<p style="margin:0">Düzeltilecek bir şey çıkmadı.</p>`;
+  const yeni = S.newWords.slice(0, 12);
+  return `<div class="card"><span class="label">Sohbet bitti · ${S.sent} mesaj</span><h3 style="font-size:22px">Sohbetin özeti</h3>${fixes}</div>
+    ${yeni.length ? `<div class="card"><span class="label">Sohbetten çıkan yeni kelimeler</span><div class="new-words">${yeni.map(([en, tr]) => `<b>${esc(en)}</b><span>${esc(tr)}</span>`).join("")}</div></div>` : ""}
+    <button class="btn" data-go="serbest">Yeni sohbet</button>
+    <button class="btn ghost" data-go="home">Rotaya dön</button>`;
+}
+
+let serbestRun = 0; // sohbetten çıkıldıysa geç gelen cevap yeni ekrana karışmasın
+async function serbestIste() {
+  const id = ++serbestRun;
+  Object.assign(S, { busy: true, err: "" }); render();
+  try {
+    const c = await SOHBET.iste(anahtar(), S.hist, S.topic);
+    if (id !== serbestRun || S.screen !== "sohbet") return;
+    c.words.forEach(([en, tr]) => { if (!DICT[en]) { DICT[en] = tr; S.newWords.push([en, tr]); } });
+    if (c.fix) { S.chat.push({ fix: c.fix }); S.fixes.push({ t: c.fix.wrong, fix: c.fix.right, why: c.fix.why }); }
+    S.hist.push({ role: "model", text: c.reply });
+    S.chat.push({ t: c.reply, tr: c.tr });
+    S.busy = false; render(); speak(c.reply);
+  } catch (e) {
+    if (id !== serbestRun || S.screen !== "sohbet") return;
+    Object.assign(S, { busy: false, err: e.message });
+    // Gönderilemeyen mesaj kaybolmasın, yazı kutusuna geri döner
+    if (S.hist.length > 1) { S.draft = S.hist.pop().text; S.chat.pop(); S.sent--; }
+    render();
+  }
+}
+function serbestBasla(topic) {
+  Object.assign(S, fresh(), { screen: "sohbet", topic, hist: [{ role: "user", text: "Start the chat with one short question." }] });
+  window.scrollTo({ top: 0 });
+  serbestIste();
+}
+function serbestGonder(t) {
+  if (S.busy || !t.trim()) return;
+  t = t.trim();
+  S.chat.push({ you: true, t }); S.hist.push({ role: "user", text: t }); S.sent++; S.draft = "";
+  serbestIste();
+}
+function serbestDinle() {
+  if (!SR || S.noMic) { S.noMic = true; return render(); }
+  let r;
+  try { r = new SR(); } catch (e) { S.noMic = true; return render(); }
+  r.lang = "en-US"; r.interimResults = false; r.maxAlternatives = 1;
+  r.onresult = e => { S.listening = false; serbestGonder(e.results[0][0].transcript); };
+  r.onerror = e => {
+    S.listening = false;
+    if (["not-allowed", "service-not-allowed", "audio-capture", "network"].includes(e.error)) S.noMic = true;
+    render();
+  };
+  r.onend = () => { if (S.listening) { S.listening = false; render(); } };
+  S.listening = true; render();
+  try { speechSynthesis.cancel(); r.start(); } catch (e) { S.listening = false; S.noMic = true; render(); }
+}
+
+const SCREENS = { home, talk, talkEnd, ear, words, finish, serbest, sohbet, sohbetSon };
 function render() {
   hideTip();
   app.innerHTML = SCREENS[S.screen]();
   const c = document.getElementById("chat");
   if (c && c.lastElementChild) c.lastElementChild.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  if (S.screen === "talk" && quiet()) { const y = document.getElementById("yaz"); if (y && matchMedia("(pointer: fine)").matches) y.focus({ preventScroll: true }); }
+  if ((S.screen === "talk" || S.screen === "sohbet") && quiet()) { const y = document.getElementById(S.screen === "talk" ? "yaz" : "serbest"); if (y && matchMedia("(pointer: fine)").matches) y.focus({ preventScroll: true }); }
 }
 function addThem(m) { S.chat.push({ t: m.them, tr: m.tr }); render(); speak(m.them); }
 function answer(t, opt) {
@@ -777,11 +899,15 @@ addEventListener("scroll", hideTip, { passive: true });
 
 app.addEventListener("submit", e => {
   e.preventDefault();
+  if (e.target.id === "serbest-form") return serbestGonder(document.getElementById("serbest").value);
+  if (e.target.id === "konu-form") { const k = document.getElementById("konu").value.trim(); if (k) serbestBasla(k); return; }
+  if (e.target.id === "anahtar-form") { const k = document.getElementById("anahtar").value.trim(); if (k) { anahtarYaz(k); render(); } return; }
   const v = document.getElementById("yaz").value.trim(); if (!v) return;
   const opt = sc().dialog[S.turn].opts.find(o => norm(o.t) === norm(v));
   answer(v, opt);
 });
 
+app.addEventListener("input", e => { if (e.target.id === "serbest") S.draft = e.target.value; });
 app.addEventListener("click", e => {
   const w = e.target.closest(".w");
   if (w && e.pointerType !== "mouse" && !w.closest("button")) { w.classList.contains("on") ? hideTip() : showTip(w); return; }
@@ -794,6 +920,10 @@ app.addEventListener("click", e => {
     if (d.go !== S.screen && (d.go === "ear" || d.go === "words")) S.order = [];
     S.screen = d.go; render(); window.scrollTo({ top: 0 }); if (d.go === "ear") speak(s.ear[0].say); return;
   }
+  if (d.topic) return serbestBasla(d.topic);
+  if ("keyDel" in d) { anahtarYaz(""); Object.assign(S, fresh(), { screen: "serbest" }); return render(); }
+  if ("freeMic" in d) return serbestDinle();
+  if ("freeRetry" in d) return serbestIste();
   if ("mic" in d) return listen();
   if ("sendHeard" in d) return answer(S.heard, null);
   if (d.say) return speak(S.chat[+d.say].t);
