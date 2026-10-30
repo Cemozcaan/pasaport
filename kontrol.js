@@ -199,7 +199,7 @@ assert.strictEqual(hepsiBolge.length, SCENES.length);
 BG.forEach(b => { assert.strictEqual(b.final.bolumler.length, 3, b.ad); b.final.bolumler.forEach(p => assert.ok(p.who && p.k)); });
 // Çizimler: var olan şehirde SVG, olmayanda boş döner
 const ciz = vm.runInContext("sehirCiz", ctx);
-["LON", "NYC", "SYD", "SFO", "CPT", "HNL"].forEach(k => assert.ok(ciz(k, "ad").startsWith("<svg") && !/NaN|undefined/.test(ciz(k, "ad")), k));
+["LON", "NYC", "SYD", "SFO", "CPT", "HNL", "DUB", "TOR", "EDI", "LAX", "CHI", "BOS", "MEL", "GLA", "YVR", "AKL"].forEach(k => assert.ok(ciz(k, "ad").startsWith("<svg") && !/NaN|undefined/.test(ciz(k, "ad")), k));
 assert.strictEqual(ciz("YOK", "ad"), "");
 // Yedek model: 429'da ikincisine geçer, anahtar hatasında geçmez
 (async () => {
