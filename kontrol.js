@@ -163,6 +163,23 @@ assert.strictEqual(y2.chats, 4); assert.strictEqual(y2.dkEn, 90);
 assert.throws(() => DEFTER.kodCoz("rastgele yazı"));
 assert.throws(() => DEFTER.kodCoz("PSP1-bozuk!!!"));
 
+// Seviye: yapay zekâ talimatına girer
+SOHBET.seviyeAyarla("B2");
+assert.ok(/at B2 level/.test(SOHBET.istekGovdesi(uzun, { konu: "x" }).systemInstruction.parts[0].text));
+assert.ok(!/B1/.test(SOHBET.istekGovdesi(uzun, { karakter: "x" }).systemInstruction.parts[0].text));
+SOHBET.seviyeAyarla("B1");
+// Yedek kodu finalleri de taşır
+assert.strictEqual(DEFTER.kodCoz(DEFTER.kodla(DEFTER.bos(), [1], [2])).finaller[0], 2);
+// Bölgeler: her durak tam bir bölgede, her final üç bölümlü
+const BG = vm.runInContext("BOLGELER", ctx), hepsiBolge = BG.flatMap(b => b.kodlar);
+assert.strictEqual(new Set(hepsiBolge).size, hepsiBolge.length, "bir şehir iki bölgede");
+SCENES.forEach(s => assert.strictEqual(hepsiBolge.filter(k => k === s.code).length, 1, `${s.code} bölgesiz`));
+assert.strictEqual(hepsiBolge.length, SCENES.length);
+BG.forEach(b => { assert.strictEqual(b.final.bolumler.length, 3, b.ad); b.final.bolumler.forEach(p => assert.ok(p.who && p.k)); });
+// Çizimler: var olan şehirde SVG, olmayanda boş döner
+const ciz = vm.runInContext("sehirCiz", ctx);
+["LON", "NYC", "SYD", "SFO", "CPT", "HNL"].forEach(k => assert.ok(ciz(k, "ad").startsWith("<svg") && !/NaN|undefined/.test(ciz(k, "ad")), k));
+assert.strictEqual(ciz("YOK", "ad"), "");
 // Yedek model: 429'da ikincisine geçer, anahtar hatasında geçmez
 (async () => {
   const dene = async durumlar => {
