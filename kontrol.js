@@ -127,6 +127,42 @@ assert.ok(/Anahtar/.test(SOHBET.hata(403, "")));
 assert.ok(/sınır/.test(SOHBET.hata(429, "")));
 assert.ok(/yoğun/.test(SOHBET.hata(503, "")));
 
+// Dedektif: üç farklı şüpheli ve geçerli suçlu şart; tanık talimatı çözümü içerir
+const dosya = { baslik: "T", olay: "O", olayTr: "Ö", supheliler: ["a", "b", "c"], suclu: 2, sir: "S", aciklama: "A", words: [{ en: "clue", tr: "ipucu" }] };
+const dsy = SOHBET.dosyaCoz(JSON.stringify(dosya));
+assert.strictEqual(dsy.suclu, 2); assert.strictEqual(dsy.words[0][1], "ipucu");
+assert.ok(SOHBET.tanik(dsy).includes("culprit is c"));
+assert.throws(() => SOHBET.dosyaCoz(JSON.stringify({ ...dosya, suclu: 3 })));
+assert.throws(() => SOHBET.dosyaCoz(JSON.stringify({ ...dosya, supheliler: ["a", "a", "c"] })));
+assert.throws(() => SOHBET.dosyaCoz(JSON.stringify({ ...dosya, sir: "" })));
+// Bir dakika: en çok 4 düzeltme, bozuk olan atılır, tür denetlenir
+const dk = SOHBET.dakikaCoz(JSON.stringify({ baslik: "İyi", duzeltmeler: [{ wrong: "a", right: "b", why: "w", kind: "Uydurma" }, { wrong: "a", right: "a" }, { wrong: "c" }] }));
+assert.strictEqual(dk.duzeltmeler.length, 1); assert.strictEqual(dk.duzeltmeler[0].kind, "Diğer");
+assert.throws(() => SOHBET.dakikaCoz(JSON.stringify({ duzeltmeler: [] })));
+
+// Yedek kodu: Türkçe harfler korunur, birleştirme kayıt silmez, bozuk kod reddedilir
+Object.assign(ctx, { btoa, atob, TextEncoder, TextDecoder, Uint8Array });
+const y1 = DEFTER.bos();
+DEFTER.kelimeEkle(y1, "şık", "çok güzel", t0);
+DEFTER.hataEkle(y1, { wrong: "a", right: "b", why: "ğüş", kind: "Edatlar" });
+y1.chats = 4; y1.dkEn = 90;
+const yk = DEFTER.kodCoz(DEFTER.kodla(y1, [0, 3]));
+assert.strictEqual(yk.defter.words["şık"].tr, "çok güzel");
+assert.strictEqual(yk.defter.fixes[0].why, "ğüş");
+assert.strictEqual(yk.damgalar.join(), "0,3");
+const y2 = DEFTER.bos();
+DEFTER.kelimeEkle(y2, "şık", "yerel anlam", t0);
+DEFTER.cevapla(y2, "şık", true, t0);
+DEFTER.kelimeEkle(y2, "yeni", "new", t0);
+DEFTER.hataEkle(y2, { wrong: "a", right: "b" });
+const sonuc = DEFTER.birlestir(y2, yk.defter);
+assert.strictEqual(y2.words["şık"].tr, "yerel anlam"); assert.strictEqual(y2.words["şık"].box, 1); // yerel korunur
+assert.strictEqual(y2.words.yeni.tr, "new");
+assert.strictEqual(sonuc.kelime, 0); assert.strictEqual(sonuc.hata, 0); assert.strictEqual(y2.fixes.length, 1); // aynı düzeltme iki kez girmez
+assert.strictEqual(y2.chats, 4); assert.strictEqual(y2.dkEn, 90);
+assert.throws(() => DEFTER.kodCoz("rastgele yazı"));
+assert.throws(() => DEFTER.kodCoz("PSP1-bozuk!!!"));
+
 // Yedek model: 429'da ikincisine geçer, anahtar hatasında geçmez
 (async () => {
   const dene = async durumlar => {
