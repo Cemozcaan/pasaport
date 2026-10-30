@@ -127,6 +127,7 @@ button.stop:hover b { text-decoration: underline; text-underline-offset: 3px; }
 .w:hover, .w.on { background: color-mix(in srgb, var(--accent) 35%, transparent); text-decoration-color: transparent; }
 #tip { position: fixed; z-index: 20; max-width: 240px; background: var(--tip-bg); color: var(--tip-fg); border-radius: 10px; padding: 7px 11px; font-size: 14px; line-height: 1.35; pointer-events: none; box-shadow: 0 6px 20px rgb(0 0 0 / .18); }
 #tip b { font-family: var(--f-display); margin-right: 6px; }
+#ses-uyari { position: fixed; z-index: 15; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: min(398px, calc(100% - 32px)); background: var(--bad-bg); color: var(--ink); border: 1.5px solid var(--bad); border-radius: 12px; padding: 10px 14px; font-size: 14px; }
 
 .dock { background: var(--paper); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .mic-row { display: flex; align-items: center; gap: 14px; }
@@ -185,6 +186,7 @@ button.stop:hover b { text-decoration: underline; text-underline-offset: 3px; }
 
 <div class="app" id="app"></div>
 <div id="tip" hidden></div>
+<div id="ses-uyari" role="status" hidden></div>
 
 <script>
 const ICON = {
@@ -481,17 +483,64 @@ try { apply(JSON.parse(localStorage.getItem("pasaport"))); } catch (e) {}
   } catch (e) {}
 })();
 
+// Ses seçimi: önce şehrin aksanı, sonra aynı aile, sonra herhangi bir İngilizce ses. İngilizce yoksa null.
+function pickVoice(list, lang) {
+  const code = v => v.lang.replace("_", "-").toLowerCase();
+  const en = list.filter(v => /^en(-|$)/.test(code(v)));
+  const best = vs => vs.find(v => /natural|online|google/i.test(v.name)) || vs[0];
+  const family = /^en-(gb|ie|au)$/i.test(lang) ? "en-gb" : "en-us";
+  const exact = en.filter(v => code(v) === lang.toLowerCase());
+  const near = en.filter(v => code(v) === family);
+  return best(exact.length ? exact : near.length ? near : en) || null;
+}
+const voices = () => { try { return speechSynthesis.getVoices(); } catch (e) { return []; } };
+const hasTts = "speechSynthesis" in window;
+let lastUtter = null, startTimer = 0; // tarayıcı konuşurken sözün silinmemesi için referans tutulur
+function notice(text) {
+  const n = document.getElementById("ses-uyari");
+  n.textContent = text || ""; n.hidden = !text;
+}
+function say(text, lang) {
+  const list = voices();
+  const v = pickVoice(list, lang);
+  if (list.length && !v) return notice("Bu cihazda İngilizce ses yok. Cihazın dil ayarlarından İngilizce konuşma sesi yüklenmeli.");
+  const u = new SpeechSynthesisUtterance(text);
+  if (v) { u.voice = v; u.lang = v.lang.replace("_", "-"); } else u.lang = lang;
+  u.rate = S.speed;
+  lastUtter = u;
+  clearTimeout(startTimer);
+  startTimer = setTimeout(() => notice("Ses başlamadı. Cihazın sesini ve sessiz modu kontrol edip Dinle'ye bir daha bas."), 3000);
+  u.onstart = () => { clearTimeout(startTimer); notice(""); };
+  u.onerror = e => {
+    clearTimeout(startTimer);
+    if (e.error === "canceled" || e.error === "interrupted") return;
+    notice("Ses çalınamadı (" + e.error + "). Dinle'ye bir daha bas.");
+  };
+  speechSynthesis.resume();
+  speechSynthesis.speak(u);
+}
 function speak(text) {
-  if (quiet()) return;
+  if (quiet() || !hasTts) return;
+  notice("");
   try {
-    const u = new SpeechSynthesisUtterance(text), lang = sc().lang;
-    const vs = speechSynthesis.getVoices();
-    const v = vs.find(v => v.lang.replace("_", "-") === lang) || vs.find(v => v.lang.startsWith(lang === "en-GB" || lang === "en-IE" ? "en-GB" : "en-US")) || vs.find(v => v.lang.startsWith("en"));
-    if (v) u.voice = v;
-    u.lang = lang; u.rate = S.speed;
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
+    const lang = sc().lang, busy = speechSynthesis.speaking || speechSynthesis.pending;
+    if (busy) speechSynthesis.cancel();
+    // shortcut: ses listesi geç gelirse en çok 1,5 sn beklenir, sonra dil koduyla denenir
+    if (!voices().length) {
+      let bitti = false;
+      const dene = () => { if (!bitti) { bitti = true; say(text, lang); } };
+      speechSynthesis.addEventListener("voiceschanged", dene, { once: true });
+      setTimeout(dene, 1500);
+    } else if (busy) setTimeout(() => say(text, lang), 80); // cancel'dan hemen sonra konuşma bazı tarayıcılarda sessizce kaybolur
+    else say(text, lang);
   } catch (e) {}
 }
+// Telefonlar sesi ilk dokunuşla açar; sonraki otomatik okumalar bu sayede çalışır
+document.addEventListener("pointerdown", () => {
+  if (!hasTts || quiet()) return;
+  try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
+}, { once: true });
+if (hasTts) speechSynthesis.addEventListener("voiceschanged", () => { if (S.screen === "home") render(); });
 
 // Mikrofon: tarayıcının ücretsiz ses tanıması. Açılamazsa söyleyip listeden seçilir.
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -554,6 +603,13 @@ function ticket(i, big) {
   </div>`;
 }
 
+function voiceLine() {
+  const list = voices();
+  if (!list.length) return "";
+  const v = pickVoice(list, SCENES[Math.max(next(), 0)].lang);
+  return v ? ` Okuyan ses: ${esc(v.name)}.` : " Bu cihazda İngilizce ses bulunamadı.";
+}
+
 function home() {
   const n = next();
   const stops = SCENES.map((s, i) => {
@@ -565,7 +621,7 @@ function home() {
   return `
   <div class="top"><div class="brand"><span class="brand-mark">EN</span>Pasaport</div><span class="count">${S.stamped.length} / ${SCENES.length} durak</span></div>
   ${modeSwitch()}
-  <p class="mode-note">${quiet() ? "Ses çalmaz, mikrofon istemez. Cevaplarını yazarsın, dinleme yerine cümle kurarsın." : "Karşındaki sesli konuşur, sen mikrofona cevap verirsin."}</p>
+  <p class="mode-note">${quiet() ? "Ses çalmaz, mikrofon istemez. Cevaplarını yazarsın, dinleme yerine cümle kurarsın." : "Karşındaki sesli konuşur, sen mikrofona cevap verirsin." + voiceLine()}</p>
   ${n >= 0 ? `<div><p class="label" style="margin:0 0 4px">Sıradaki durak</p><h1 style="font-size:34px;line-height:1.05">${S.stamped.length ? "Devam etmeye hazırsın." : "İlk yolculuğun hazır."}</h1></div>
     ${ticket(n, true)}<button class="btn" data-start="${n}">Yolculuğa başla</button>`
   : `<div class="card"><span class="label">Rota tamam</span><h3 style="font-size:22px">Bütün durakları damgaladın.</h3><p class="muted">Yeni duraklar için Claude'a "Pasaport'a yeni durak ekle" yazman yeter. Bu arada istediğin durağa dokunup tekrar oynayabilirsin.</p></div>`}
