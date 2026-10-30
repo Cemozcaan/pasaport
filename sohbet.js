@@ -13,7 +13,7 @@ const SOHBET = (() => {
 - fix: fill it only if Cem's last message has a real grammar or word-choice mistake, otherwise null. Ignore capital letters, punctuation and small typos, because he may be using voice input. wrong = the wrong part, right = the corrected part, why = one short, simple Turkish explanation, kind = exactly one of: ${TURLER.join(", ")}.
 - If Cem writes in Turkish or asks how to say something: fix.wrong = his text, fix.right = how to say it in English, fix.why = "Bunu böyle söyleyebilirsin.", fix.kind = "Çeviri". Then continue the chat in reply.
 - words: at most 6 words from reply or fix.right that a B1 learner may not know, lowercase, with a short Turkish meaning in this context. Skip names and common words.
-On the very first message there is nothing to correct: fix = null.`;
+When the message only asks you to start, there is nothing to correct: fix = null.`;
 
   function talimat(ayar) {
     if (ayar.karakter) return `Role-play with Cem, a Turkish adult at B1 (intermediate) level who is practising difficult real-life situations in English. ${ayar.karakter}
@@ -94,6 +94,32 @@ Grade only Cem's lines, honestly and from 0 to 100: netlik (clear), kibarlik (po
   const hikayeIstegi = konu => tekIstek(`Write a new, original, surprising short story in English for a Turkish B1 learner. Theme: ${konu}. 90 to 130 words, simple past mostly, B1-level words.
 baslik = English title. metin = the story. sorular = 3 comprehension questions written in Turkish: q = question, o = exactly 3 different Turkish options, a = index (0-2) of the correct one. words = up to 8 story words a B1 learner may not know, lowercase, with short Turkish meanings.`, HIKAYE_SEMA, 1);
 
+  // Dedektif: gizli çözüm yalnız tanığın talimatında durur, ekranda bitene kadar gösterilmez
+  const KELIME_SEMA = SEMA.properties.words;
+  const DOSYA_SEMA = { type: "OBJECT", required: ["baslik", "olay", "olayTr", "supheliler", "suclu", "sir", "aciklama"], properties: { baslik: metin, olay: metin, olayTr: metin, supheliler: { type: "ARRAY", items: metin }, suclu: { type: "INTEGER" }, sir: metin, aciklama: metin, words: KELIME_SEMA } };
+  function dosyaCoz(ham) {
+    const j = JSON.parse(ham), s = j.supheliler;
+    if (![j.baslik, j.olay, j.sir, j.aciklama].every(dolu) || !Array.isArray(s) || s.length !== 3 || !s.every(dolu) || new Set(s).size !== 3 || !Number.isInteger(j.suclu) || j.suclu < 0 || j.suclu > 2) throw new Error("eksik dosya");
+    return { baslik: j.baslik.trim(), olay: j.olay.trim(), olayTr: dolu(j.olayTr) ? j.olayTr.trim() : "", supheliler: s.map(x => x.trim()), suclu: j.suclu, sir: j.sir.trim(), aciklama: j.aciklama.trim(), words: kelimeler(j.words) };
+  }
+  const dosyaIstegi = () => tekIstek(`Invent a new, original, light-hearted mystery for a Turkish B1 English learner who will solve it by asking a witness questions. No violence.
+baslik = short English title. olay = what happened in 2 or 3 simple English sentences, naming no culprit, ending with "Ask me questions." olayTr = its Turkish translation. supheliler = exactly 3 short different English suspect names or roles. suclu = index (0-2) of the culprit. sir = 3 to 5 English facts that are clues and logically point to the culprit. aciklama = one or two Turkish sentences explaining the solution. words = up to 5 words from olay a B1 learner may not know, lowercase, with short Turkish meanings.`, DOSYA_SEMA, 1);
+  const tanik = d => `You are the witness in a detective game. Case: ${d.olay} Suspects: ${d.supheliler.join(", ")}. Secret: the culprit is ${d.supheliler[d.suclu]}. Facts: ${d.sir}
+Answer Cem's questions truthfully, using the facts, in 1 or 2 short sentences. Give clues, but never name the culprit, even if he asks directly: tell him to decide himself.`;
+
+  // Kesintisiz bir dakika: ses tanıma noktalama koymaz, buna göre değerlendirilir
+  const DAKIKA_SEMA = { type: "OBJECT", required: ["baslik", "duzeltmeler"], properties: { baslik: metin, duzeltmeler: { type: "ARRAY", items: SEMA.properties.fix }, words: KELIME_SEMA } };
+  function dakikaCoz(ham) {
+    const j = JSON.parse(ham);
+    if (!dolu(j.baslik)) throw new Error("başlık yok");
+    const d = (Array.isArray(j.duzeltmeler) ? j.duzeltmeler : []).filter(f => f && dolu(f.wrong) && dolu(f.right) && f.wrong.trim() !== f.right.trim()).slice(0, 4)
+      .map(f => ({ wrong: f.wrong.trim(), right: f.right.trim(), why: dolu(f.why) ? f.why.trim() : "", kind: TURLER.includes(f.kind) ? f.kind : "Diğer" }));
+    return { baslik: j.baslik.trim(), duzeltmeler: d, words: kelimeler(j.words) };
+  }
+  const dakikaIstegi = (konu, yazi) => tekIstek(`Cem, a Turkish B1 learner, spoke English for up to a minute about: ${konu}. This is a voice transcript with no punctuation, and it may contain recognition errors, so ignore punctuation and do not correct what looks like a misheard word:
+"${yazi}"
+baslik = one short encouraging Turkish sentence. duzeltmeler = up to 4 of his most useful real mistakes or unnatural phrases: wrong = his words exactly, right = a more natural version, why = one short simple Turkish explanation, kind = exactly one of: ${TURLER.join(", ")}. words = up to 5 useful words from your corrections, lowercase, with short Turkish meanings.`, DAKIKA_SEMA, 0.4);
+
   function hata(durum, mesaj) {
     if (durum === 401 || durum === 403 || (durum === 400 && /api.?key/i.test(mesaj || ""))) return "Anahtar kabul edilmedi. Doğru kopyaladığını kontrol et ya da anahtarı değiştir.";
     if (durum === 429) return "Ücretsiz kullanım sınırı şimdilik doldu. Biraz sonra tekrar dene, yazılı duraklar bu arada çalışır.";
@@ -127,7 +153,9 @@ baslik = English title. metin = the story. sorular = 3 comprehension questions w
   }
 
   return {
-    TURLER, coz, avCoz, karneCoz, hikayeCoz, hata, istekGovdesi,
+    TURLER, coz, avCoz, karneCoz, hikayeCoz, dosyaCoz, dakikaCoz, tanik, hata, istekGovdesi,
+    dosya: anahtar => cagir(anahtar, dosyaIstegi(), dosyaCoz),
+    dakika: (anahtar, konu, yazi) => cagir(anahtar, dakikaIstegi(konu, yazi), dakikaCoz),
     iste: (anahtar, gecmis, ayar) => cagir(anahtar, istekGovdesi(gecmis, ayar), coz),
     av: (anahtar, tur, ornekler) => cagir(anahtar, avIstegi(tur, ornekler), avCoz),
     karne: (anahtar, ad, gecmis) => cagir(anahtar, karneIstegi(ad, gecmis), karneCoz),
