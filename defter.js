@@ -51,8 +51,8 @@ const DEFTER = (() => {
   }
   // Yedek kodu: damgalar + kelimeler + düzeltmeler. Anahtar ve hikâyeler girmez (kod kısa ve dışarı verilebilir kalsın).
   const ON_EK = "PSP1-";
-  function kodla(d, damgalar) {
-    const yazi = JSON.stringify({ s: damgalar, w: d.words, f: d.fixes, c: d.chats, n: d.dkSon, e: d.dkEn });
+  function kodla(d, damgalar, finaller) {
+    const yazi = JSON.stringify({ s: damgalar, g: finaller || [], w: d.words, f: d.fixes, c: d.chats, n: d.dkSon, e: d.dkEn });
     return ON_EK + btoa(Array.from(new TextEncoder().encode(yazi), b => String.fromCharCode(b)).join(""));
   }
   function kodCoz(kod) {
@@ -60,7 +60,7 @@ const DEFTER = (() => {
     if (!k.startsWith(ON_EK)) throw new Error("kod değil");
     const j = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(k.slice(ON_EK.length)), c => c.charCodeAt(0))));
     const d = yukle({ words: j.w, fixes: j.f, chats: j.c, dkSon: j.n, dkEn: j.e });
-    return { defter: d, damgalar: Array.isArray(j.s) ? j.s.filter(Number.isInteger) : [] };
+    return { defter: d, damgalar: Array.isArray(j.s) ? j.s.filter(Number.isInteger) : [], finaller: Array.isArray(j.g) ? j.g.filter(Number.isInteger) : [] };
   }
   // Birleştirme hiçbir şey silmez: yerel kelimenin tekrar durumu korunur, eksikler eklenir
   function birlestir(d, gelen) {
