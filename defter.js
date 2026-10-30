@@ -5,7 +5,8 @@ const DEFTER = (() => {
   const SON_HATA = 30; // hata haritası son düzeltmelere bakar, düzeldikçe çubuk kısalır
   const HATA_SINIR = 200;
 
-  const bos = () => ({ words: {}, fixes: [], stories: [], chats: 0, dkSon: 0, dkEn: 0 });
+  const SOHBET_SINIR = 20;
+  const bos = () => ({ words: {}, fixes: [], stories: [], chats: 0, dkSon: 0, dkEn: 0, sohbetler: [] });
   function yukle(j) {
     const d = bos();
     if (!j || typeof j !== "object") return d;
@@ -14,6 +15,7 @@ const DEFTER = (() => {
     });
     if (Array.isArray(j.fixes)) d.fixes = j.fixes.filter(f => f && typeof f.wrong === "string" && typeof f.right === "string");
     if (Array.isArray(j.stories)) d.stories = j.stories.filter(s => s && typeof s.metin === "string" && Array.isArray(s.sorular));
+    if (Array.isArray(j.sohbetler)) d.sohbetler = j.sohbetler.filter(s => s && Array.isArray(s.chat) && Array.isArray(s.hist) && typeof s.topic === "string");
     if (Number.isInteger(j.chats)) d.chats = j.chats;
     if (Number.isInteger(j.dkSon)) d.dkSon = j.dkSon;
     if (Number.isInteger(j.dkEn)) d.dkEn = j.dkEn;
@@ -23,6 +25,10 @@ const DEFTER = (() => {
   function hataEkle(d, f) { d.fixes.push(f); if (d.fixes.length > HATA_SINIR) d.fixes.shift(); }
   function hikayeEkle(d, s) { d.stories.unshift(s); d.stories.length = Math.min(d.stories.length, 5); }
 
+  // Aynı sohbet güncellenir ve başa gelir; en eski sohbetler silinir
+  function sohbetKaydet(d, k) {
+    d.sohbetler = [k, ...d.sohbetler.filter(s => s.id !== k.id)].slice(0, SOHBET_SINIR);
+  }
   const bekleyen = (d, simdi) => Object.keys(d.words).filter(en => d.words[en].due <= simdi);
   // Önce vakti gelenler, en düşük kutudan; bekleme yok: vakti gelen azsa en yakın vadeliler eklenir
   function tekrarListesi(d, simdi, adet) {
@@ -73,5 +79,5 @@ const DEFTER = (() => {
     if (!d.dkSon) d.dkSon = gelen.dkSon;
     return { kelime, hata: hataSay };
   }
-  return { kodla, kodCoz, birlestir, bos, yukle, kelimeEkle, hataEkle, hikayeEkle, bekleyen, tekrarListesi, cevapla, siklar, hataHaritasi };
+  return { sohbetKaydet, kodla, kodCoz, birlestir, bos, yukle, kelimeEkle, hataEkle, hikayeEkle, bekleyen, tekrarListesi, cevapla, siklar, hataHaritasi };
 })();
