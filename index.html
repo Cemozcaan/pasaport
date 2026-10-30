@@ -188,6 +188,13 @@ button.stop:hover b { text-decoration: underline; text-underline-offset: 3px; }
 <div id="tip" hidden></div>
 <div id="ses-uyari" role="status" hidden></div>
 
+<script src="duraklar/0.js"></script>
+<script src="duraklar/1.js"></script>
+<script src="duraklar/2.js"></script>
+<script src="duraklar/3.js"></script>
+<script src="duraklar/4.js"></script>
+<script src="duraklar/5.js"></script>
+<script src="duraklar/sozluk.js"></script>
 <script>
 const ICON = {
   mic: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
@@ -434,6 +441,9 @@ const SCENES = [
       ["exchange", "değiştirmek", "/ɪksˈtʃeɪndʒ/"], ["size", "beden", "/saɪz/"], ["fit", "üstüne olmak", "/fɪt/"]] }
 ];
 
+SCENES.push(...EK);
+Object.assign(DICT, SOZLUK_EK);
+
 const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [] });
 const S = Object.assign({ screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false }, fresh());
 const app = document.getElementById("app");
@@ -447,7 +457,7 @@ const norm = s => s.toLowerCase().replace(/[’]/g, "'").replace(/[^a-z0-9' -]/g
 // İngilizce metni kelime kelime sarar; sözlükte olanın üstüne gelince Türkçesi çıkar
 function gloss(text) {
   return text.split(/(\s+)/).map(tok => {
-    const m = tok.match(/^([^A-Za-z']*)([A-Za-z'’-]+)([^A-Za-z']*)$/);
+    const m = tok.match(/^([^A-Za-zé']*)([A-Za-zé'’-]+)([^A-Za-zé']*)$/);
     if (!m) return esc(tok);
     const key = m[2].toLowerCase().replace(/’/g, "'");
     return DICT[key] ? `${esc(m[1])}<span class="w" data-w="${esc(key)}">${esc(m[2])}</span>${esc(m[3])}` : esc(tok);
@@ -488,7 +498,7 @@ function pickVoice(list, lang) {
   const code = v => v.lang.replace("_", "-").toLowerCase();
   const en = list.filter(v => /^en(-|$)/.test(code(v)));
   const best = vs => vs.find(v => /natural|online|google/i.test(v.name)) || vs[0];
-  const family = /^en-(gb|ie|au)$/i.test(lang) ? "en-gb" : "en-us";
+  const family = /^en-(gb|ie|au|nz|za|in|sg)$/i.test(lang) ? "en-gb" : "en-us";
   const exact = en.filter(v => code(v) === lang.toLowerCase());
   const near = en.filter(v => code(v) === family);
   return best(exact.length ? exact : near.length ? near : en) || null;
@@ -612,7 +622,12 @@ function voiceLine() {
 
 function home() {
   const n = next();
+  // Kilitli duraklardan yalnız yakındakiler gösterilir, liste sonsuza uzamasın
+  const kilitli = i => !S.stamped.includes(i) && i !== n;
+  const sonGoster = n < 0 ? SCENES.length : n + 4;
+  const gizli = SCENES.filter((_, i) => kilitli(i) && i > sonGoster).length;
   const stops = SCENES.map((s, i) => {
+    if (kilitli(i) && i > sonGoster) return "";
     const st = S.stamped.includes(i) ? "done" : i === n ? "now" : "locked";
     const tag = st === "done" ? "Tekrar oyna" : st === "now" ? "Sıradaki" : "Kilitli";
     const inner = `<span class="dot">${s.code}</span><span><b>${s.title}</b><small>${s.city}</small></span><span class="tag">${tag}</span>`;
@@ -628,6 +643,7 @@ function home() {
   <div class="route">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px"><h3 style="font-size:18px">Rotan</h3><span class="label">Bekleme yok</span></div>
     ${stops}
+    ${gizli ? `<p class="note" style="margin-top:6px">+ ${gizli} durak daha seni bekliyor</p>` : ""}
   </div>
   <p class="note">Bir durağı bitirince sıradaki hemen açılır. Bitirdiğin bir durağa dokunup tekrar oynayabilirsin.</p>`;
 }
