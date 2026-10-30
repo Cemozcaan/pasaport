@@ -21,7 +21,7 @@ When the message only asks you to start, there is nothing to correct: fix = null
 Stay in character and do not make it too easy: react to his tone and to what he actually says. Speak in natural English, 1 to 3 short sentences, using ${seviye}-level words.
 ${ortak()}`;
     return `You are a friendly English conversation partner for Cem, a Turkish adult at ${seviye} level. Topic: ${ayar.konu}. If Cem changes the topic, follow him.
-${ayar.tarz ? `Your personality: ${ayar.tarz} Show it in how you talk, and stay easy to understand.\n` : ""}${ayar.hedef && ayar.hedef.length ? `Cem is reviewing these words: ${ayar.hedef.join(", ")}. Use them naturally when they fit, and create chances for him to use them. used = those of these exact words that Cem himself used correctly in his last message, otherwise empty.\n` : ""}${ayar.odak ? `Ask questions that make him use this grammar point: ${ayar.odak}. Watch for mistakes in it.\n` : ""}Reply in natural everyday English, 1 to 3 short sentences, and usually end with one question. Use ${seviye}-level words.
+${ayar.tarz ? `Your personality: ${ayar.tarz} Show it in how you talk, and stay easy to understand.\n` : ""}${ayar.odak ? `Ask questions that make him use this grammar point: ${ayar.odak}. Watch for mistakes in it.\n` : ""}Reply in natural everyday English, 1 to 3 short sentences, and usually end with one question. Use ${seviye}-level words.
 ${ortak()}`;
   }
 
@@ -31,9 +31,7 @@ ${ortak()}`;
     properties: {
       reply: metin, tr: metin,
       fix: { type: "OBJECT", nullable: true, required: ["wrong", "right", "why", "kind"], properties: { wrong: metin, right: metin, why: metin, kind: metin } },
-      words: { type: "ARRAY", items: { type: "OBJECT", required: ["en", "tr"], properties: { en: metin, tr: metin } } },
-      used: { type: "ARRAY", items: metin },
-    },
+      words: { type: "ARRAY", items: { type: "OBJECT", required: ["en", "tr"], properties: { en: metin, tr: metin } } },    },
   };
   const ayarlar = (sema, sicaklik) => ({ responseMimeType: "application/json", responseSchema: sema, temperature: sicaklik });
 
@@ -57,9 +55,7 @@ ${ortak()}`;
       tr: dolu(j.tr) ? j.tr.trim() : "",
       fix: f && dolu(f.wrong) && dolu(f.right) && f.wrong.trim() !== f.right.trim()
         ? { wrong: f.wrong.trim(), right: f.right.trim(), why: dolu(f.why) ? f.why.trim() : "", kind: f.kind === "Çeviri" || TURLER.includes(f.kind) ? f.kind : "Diğer" } : null,
-      words: kelimeler(j.words),
-      used: (Array.isArray(j.used) ? j.used : []).filter(dolu).map(x => x.trim()),
-    };
+      words: kelimeler(j.words),    };
   }
   // Üç şıklı soru: şıklar farklı ve cevap geçerli değilse soru atılır
   const soruMu = q => q && dolu(q.q) && Array.isArray(q.o) && q.o.length === 3 && q.o.every(dolu) && new Set(q.o).size === 3 && Number.isInteger(q.a) && q.a >= 0 && q.a <= 2;
