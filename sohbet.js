@@ -1,7 +1,9 @@
 // Serbest Sohbet: Gemini ücretsiz planına istek ve cevabın çözümü. Ekran kodu index.html'de.
 const SOHBET = (() => {
-  const MODEL = "gemini-flash-latest"; // sürüm adı eskiyince site bozulmasın diye Google'ın güncel takma adı
-  const ADRES = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+  // Önce en hızlısı; yoksa, sınırı dolduysa ya da geç kalırsa Google'ın güncel takma adına geçilir
+  const MODELLER = ["gemini-3.5-flash-lite", "gemini-flash-latest"];
+  const SURE_MS = 20000;
+  const adres = m => `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`;
   const SON_MESAJ = 29; // tek sayı: gönderilen geçmiş hep kullanıcının mesajıyla başlar
 
   const talimat = konu => `You are a friendly English conversation partner for Cem, a Turkish adult at B1 (intermediate) level. Topic: ${konu}. If Cem changes the topic, follow him.
@@ -11,7 +13,7 @@ Fields:
 - tr: Turkish translation of reply.
 - fix: fill it only if Cem's last message has a real grammar or word-choice mistake, otherwise null. Ignore capital letters, punctuation and small typos, because he may be using voice input. wrong = the wrong part, right = the corrected part, why = one short, simple Turkish explanation.
 - If Cem writes in Turkish or asks how to say something: fix.wrong = his text, fix.right = how to say it in English, fix.why = "Bunu böyle söyleyebilirsin." Then continue the chat in reply.
-- words: every distinct word in reply and fix.right, lowercase, with its short Turkish meaning in this context. Skip names.
+- words: at most 6 words from reply or fix.right that a B1 learner may not know, lowercase, with a short Turkish meaning in this context. Skip names and common words.
 On the very first message there is nothing to correct: fix = null.`;
 
   const SEMA = {
@@ -53,10 +55,15 @@ On the very first message there is nothing to correct: fix = null.`;
 
   async function iste(anahtar, gecmis, konu) {
     let y;
-    try {
-      y = await fetch(ADRES, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": anahtar }, body: JSON.stringify(istekGovdesi(gecmis, konu)) });
-    } catch (e) {
-      throw new Error("İnternete bağlanılamadı. Bağlantını kontrol edip tekrar dene.");
+    for (const [i, model] of MODELLER.entries()) {
+      const son = i === MODELLER.length - 1;
+      try {
+        y = await fetch(adres(model), { method: "POST", signal: son ? undefined : AbortSignal.timeout(SURE_MS), headers: { "Content-Type": "application/json", "x-goog-api-key": anahtar }, body: JSON.stringify(istekGovdesi(gecmis, konu)) });
+      } catch (e) {
+        if (!son && e.name === "TimeoutError") continue;
+        throw new Error("İnternete bağlanılamadı. Bağlantını kontrol edip tekrar dene.");
+      }
+      if (y.ok || !(y.status === 404 || y.status === 429 || y.status >= 500)) break;
     }
     if (!y.ok) {
       let mesaj = "";
