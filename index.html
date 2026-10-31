@@ -261,7 +261,11 @@ body.has-nav #ses-uyari { bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 
 .ear-play { display: flex; align-items: center; gap: 14px; }
 .speed { display: flex; gap: 6px; }
-.speed .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.speed .chip[aria-pressed="true"], .ses-satir .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.ses-liste { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; margin-top: 10px; }
+.ses-satir { display: flex; gap: 6px; align-items: stretch; }
+.ses-satir .chip { padding: 8px 12px; flex: none; }
+.ses-satir .sec { flex: 1; min-width: 0; text-align: left; }
 .reveal { margin: 0; font-size: 14px; color: var(--muted); }
 
 /* Cümle kur */
@@ -656,10 +660,16 @@ function damgaKatman() {
     <button class="btn" data-damga-kapa>Devam et</button></div></div>`;
 }
 
-// Ses seçimi: önce şehrin aksanı, sonra aynı aile, sonra herhangi bir İngilizce ses. İngilizce yoksa null.
-function pickVoice(list, lang) {
+// Okuma sesi cihaza özel: ses listesi her cihazda farklı olduğu için hesaba yazılmaz
+const sesTercih = () => { try { return localStorage.getItem("pasaport-ses") || ""; } catch (e) { return ""; } };
+function sesYaz(v) { try { v ? localStorage.setItem("pasaport-ses", v) : localStorage.removeItem("pasaport-ses"); } catch (e) {} }
+const ingilizceSesler = () => voices().filter(v => /^en(-|$)/i.test(v.lang.replace("_", "-")));
+// Ses seçimi: önce kullanıcının seçtiği ses, sonra şehrin aksanı, sonra aynı aile, sonra herhangi bir İngilizce ses. İngilizce yoksa null.
+function pickVoice(list, lang, tercih) {
   const code = v => v.lang.replace("_", "-").toLowerCase();
   const en = list.filter(v => /^en(-|$)/.test(code(v)));
+  const secili = tercih && en.find(v => v.voiceURI === tercih);
+  if (secili) return secili;
   const best = vs => vs.find(v => /natural|online|google/i.test(v.name)) || vs[0];
   const family = /^en-(gb|ie|au|nz|za|in|sg)$/i.test(lang) ? "en-gb" : "en-us";
   const exact = en.filter(v => code(v) === lang.toLowerCase());
@@ -673,9 +683,9 @@ function notice(text) {
   const n = document.getElementById("ses-uyari");
   n.textContent = text || ""; n.hidden = !text;
 }
-function say(text, lang, olay) {
+function say(text, lang, olay, ses) {
   const list = voices();
-  const v = pickVoice(list, lang);
+  const v = ses || pickVoice(list, lang, sesTercih());
   if (list.length && !v) return notice("Bu cihazda İngilizce ses yok. Cihazın dil ayarlarından İngilizce konuşma sesi yüklenmeli.");
   const u = new SpeechSynthesisUtterance(text);
   if (v) { u.voice = v; u.lang = v.lang.replace("_", "-"); } else u.lang = lang;
@@ -714,7 +724,7 @@ document.addEventListener("pointerdown", () => {
   if (!hasTts || quiet()) return;
   try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
 }, { once: true });
-if (hasTts) speechSynthesis.addEventListener("voiceschanged", () => { if (S.screen === "home") render(); });
+if (hasTts) speechSynthesis.addEventListener("voiceschanged", () => { if (S.screen === "home" || S.screen === "ayarlar") render(); });
 
 // Mikrofon: tarayıcının ücretsiz ses tanıması. Açılamazsa söyleyip listeden seçilir.
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -780,8 +790,15 @@ function ticket(i, big) {
 function voiceLine() {
   const list = voices();
   if (!list.length) return "";
-  const v = pickVoice(list, SCENES[Math.max(next(), 0)].lang);
+  const v = pickVoice(list, SCENES[Math.max(next(), 0)].lang, sesTercih());
   return v ? ` Okuyan ses: ${esc(v.name)}.` : " Bu cihazda İngilizce ses bulunamadı.";
+}
+
+function sesListesi() {
+  const sec = ingilizceSesler().find(v => v.voiceURI === sesTercih());
+  return `<div class="ses-liste"><div class="ses-satir"><button class="chip sec" data-ses-sec="oto" aria-pressed="${!sec}">Otomatik (şehrin aksanı)</button></div>
+    ${ingilizceSesler().map((v, i) => `<div class="ses-satir"><button class="chip sec" data-ses-sec="${i}" aria-pressed="${sec === v}">${esc(v.name)}</button><button class="chip" data-ses-dene="${i}">${ICON.play} Dene</button></div>`).join("")}</div>
+    <p class="muted">Seçimin yalnızca bu cihazda geçerli. Bir ses seçince her şehirde o ses konuşur.</p>`;
 }
 
 const adimlar = t => `<ol class="steps-list">${t.map(x => `<li>${x}</li>`).join("")}</ol>`;
@@ -831,6 +848,7 @@ function ayarlar() {
     <p class="muted">${{ A2: "Kısa ve basit cümleler.", B1: "Günlük konuşma, orta zorluk.", B2: "Daha uzun cümleler, daha zengin kelimeler." }[S.seviye]} Sohbet, oyun ve hikâyeler buna göre yazılır. Yazılı duraklar B1 kalır.</p>
     <span class="label">Okuma hızı</span>${hizSec()}
     ${quiet() ? "" : `<p class="muted">${voiceLine().trim() || "Karşındaki sesli konuşur, sen mikrofona cevap verirsin."}</p>`}</section>
+  ${quiet() || !ingilizceSesler().length ? "" : ac("ses", "Okuma sesi", esc((ingilizceSesler().find(v => v.voiceURI === sesTercih()) || { name: "Otomatik" }).name), sesListesi)}
   ${tamEkran ? "" : ac("ekran", "Ana ekrana ekle", "Telefonda uygulama gibi açılır", () => `
     <div class="seg"><button data-phone="iphone" aria-pressed="${S.phone === "iphone"}">iPhone</button><button data-phone="android" aria-pressed="${S.phone === "android"}">Android</button></div>
     ${adimlar(S.phone === "iphone" ? ["Pasaport'u Safari'de aç.", "Alttaki Paylaş düğmesine bas.", "\"Ana Ekrana Ekle\" seçeneğine bas."] : ["Pasaport'u Chrome'da aç.", "Sağ üstteki üç noktaya bas.", "\"Ana ekrana ekle\" seçeneğine bas."])}
@@ -1652,6 +1670,12 @@ app.addEventListener("click", e => {
   }
   if (d.phone) { S.phone = d.phone; return render(); }
   if (d.ac) { S.ayarAc = S.ayarAc === d.ac ? "" : d.ac; return render(); }
+  if (d.sesSec) { sesYaz(d.sesSec === "oto" ? "" : ingilizceSesler()[+d.sesSec].voiceURI); return render(); }
+  if (d.sesDene) {
+    const v = ingilizceSesler()[+d.sesDene];
+    try { speechSynthesis.cancel(); setTimeout(() => say("Hello! This is how I sound. Nice to meet you.", v.lang.replace("_", "-"), null, v), 80); } catch (x) {}
+    return;
+  }
   if (d.kat) { S.kat = +d.kat; return render(); }
   if (d.kalip) { const [en, tr] = KALIPLAR[S.kat].l[+d.kalip]; DEFTER.kelimeGeriAl(DF, en); kelimeKaydet([[en, tr]]); return render(); }
   if (d.kalipDinle) return speak(KALIPLAR[S.kat].l[+d.kalipDinle][0]);
