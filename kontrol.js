@@ -188,6 +188,16 @@ const ip = SOHBET.ipucuCoz(JSON.stringify({ ipuclari: ["a", "b", "c", 5], ornek:
 assert.strictEqual(ip.ipuclari.length, 2); assert.strictEqual(ip.ornek, "x");
 assert.throws(() => SOHBET.ipucuCoz(JSON.stringify({ ipuclari: [], ornek: "x" })));
 assert.throws(() => SOHBET.ipucuCoz(JSON.stringify({ ipuclari: ["a"] })));
+// Türkçe söyle: en çok 5 kelime, eksik parça atılır, kelime ya da doğal cümle yoksa hata
+const trs = SOHBET.trSoyleCoz(JSON.stringify({ kelimeler: [{ en: "a", tr: "b" }, { en: "c" }, 5, { en: "d", tr: "e" }, { en: "f", tr: "g" }, { en: "h", tr: "i" }, { en: "j", tr: "k" }, { en: "l", tr: "m" }], dogal: " x " }));
+assert.strictEqual(trs.kelimeler.length, 5); assert.strictEqual(trs.kelimeler[1].join(), "d,e"); assert.strictEqual(trs.dogal, "x");
+assert.throws(() => SOHBET.trSoyleCoz(JSON.stringify({ kelimeler: [], dogal: "x" })));
+assert.throws(() => SOHBET.trSoyleCoz(JSON.stringify({ kelimeler: [{ en: "a", tr: "b" }] })));
+// Konuşma birleştirme: büyüyen tekrar tek cümle olur, ayrı parçalar sıralanır
+const sesBirlestir = vm.runInNewContext("(" + src.match(/function sesBirlestir[\s\S]*?\n\}/)[0] + ")");
+assert.strictEqual(sesBirlestir(["I", "I went", "I went home"]), "I went home");
+assert.strictEqual(sesBirlestir(["the meeting ran late,", " so I missed lunch"]), "the meeting ran late, so I missed lunch");
+assert.strictEqual(sesBirlestir(["", "  "]), "");
 // Defter düzenleme: silinen kelime kendiliğinden dönmez, "biliyorum" sıradan çıkar, bozuk anlam yazılmaz
 const dz = DEFTER.bos();
 DEFTER.kelimeEkle(dz, "a", "1", 0); DEFTER.kelimeEkle(dz, "b", "2", 0);
