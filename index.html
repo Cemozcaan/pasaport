@@ -239,8 +239,43 @@ body.has-nav #ses-uyari { bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 .dock { background: var(--paper); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .mic-row { display: flex; align-items: center; gap: 14px; }
 .mic { width: 64px; height: 64px; flex: none; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
-.mic.listening { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent); }
+.mic { position: relative; transition: transform .12s ease-out, background-color .18s; }
+.mic:active:not(:disabled) { transform: scale(.88); }
+.mic svg { position: relative; z-index: 1; }
+.mic.dinliyor { background: var(--bad); color: #FFF6F4; }
+.mic.dinliyor::before, .mic.dinliyor::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--bad); animation: mic-halka 1.8s ease-out infinite; }
+.mic.dinliyor::after { animation-delay: .9s; }
+@keyframes mic-halka { from { transform: scale(1); opacity: .7; } to { transform: scale(1.55); opacity: 0; } }
+.mic.gidiyor { background: var(--you-bg); color: var(--you-fg); }
+.mic.gidiyor svg { animation: mic-uc .45s ease-in forwards; }
+@keyframes mic-uc { 60% { transform: translate(5px, -5px) scale(.9); opacity: 1; } 100% { transform: translate(16px, -16px) scale(.6); opacity: 0; } }
+.mic.tamam { background: var(--good); color: #fff; }
+.mic.tamam path { stroke-dasharray: 26; animation: mic-ciz .3s ease-out; }
+@keyframes mic-ciz { from { stroke-dashoffset: 26; } to { stroke-dashoffset: 0; } }
+.mic.bekliyor { background: var(--paper-2); color: var(--muted); }
+.mic.bekliyor::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--you-bg); animation: mic-don .9s linear infinite; }
+@keyframes mic-don { to { transform: rotate(360deg); } }
+.dalga { display: inline-flex; align-items: center; gap: 3px; height: 16px; vertical-align: middle; margin-left: 6px; }
+.dalga i { display: block; width: 3px; height: 100%; background: var(--bad); border-radius: 2px; animation: mic-dalga .9s ease-in-out infinite; }
+.dalga i:nth-child(2) { animation-delay: .15s; } .dalga i:nth-child(3) { animation-delay: .3s; } .dalga i:nth-child(4) { animation-delay: .45s; }
+.dalga.sakin i { animation: none; transform: scaleY(.2); }
+@keyframes mic-dalga { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .mic::before, .mic::after, .dalga i { animation: none !important; } }
+.duyulan { background: var(--paper-2); border-radius: 12px; padding: 10px 12px; min-height: 44px; overflow-wrap: anywhere; }
+.alt-sira { display: flex; flex-wrap: wrap; gap: 6px; }
+.zaman { display: flex; flex-direction: column; gap: 6px; }
+.serit { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.serit .chip { white-space: nowrap; flex: none; padding: 5px 11px; }
+.zaman-anlam { font-size: 13px; color: var(--muted); min-height: 19px; }
+.tr-kart { border: 1.5px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 9px; }
+.tr-kart > p { margin: 0; }
+.kelimeler { display: flex; flex-wrap: wrap; gap: 6px; }
+.kelime { background: var(--paper-2); border-radius: 10px; padding: 5px 9px; font-size: 14px; }
+.kelime b { display: block; }
+.kelime small { color: var(--muted); }
+.dogal { background: var(--paper-2); border-radius: 10px; padding: 8px 11px; font-weight: 700; }
 .mic-row p { margin: 0; font-size: 14px; color: var(--muted); }
+.mic-row p b { color: var(--ink); display: block; font-size: 15px; }
 .compose { display: flex; gap: 8px; }
 .compose input { flex: 1; min-width: 0; border: 1.5px solid var(--line); background: var(--paper-2); border-radius: 12px; padding: 12px 14px; font-size: 16px; }
 .compose button { border: 0; border-radius: 12px; padding: 0 16px; background: var(--accent); color: var(--accent-ink); font-family: var(--f-display); font-weight: 700; }
@@ -323,6 +358,8 @@ body.has-nav #ses-uyari { bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 <script>
 const ICON = {
   mic: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  ucak: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></svg>',
+  tik: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   play: '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>',
   playBig: '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>',
   sound: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>',
@@ -570,7 +607,7 @@ SCENES.push(...EK);
 Object.assign(DICT, SOZLUK_EK);
 Object.setPrototypeOf(DICT, null); // sohbette "constructor" gibi bir kelime geçerse sözlükte varmış sanılmasın
 
-const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false, final: null, bolum: 0, bolumSent: 0, finalHist: [], ipucu: null, ipucuAcik: false, rol: null, tel: null, telYazi: false, telActi: 0, telBas: 0, kayitId: 0 });
+const fresh = () => ({ turn: 0, chat: [], fixes: [], ask: false, heard: "", listening: false, tr: {}, ear: 0, earOk: 0, earPick: null, pick: null, done: [], order: [], tokens: [], built: [], hist: [], topic: "", busy: false, err: "", draft: "", newWords: [], sent: 0, zor: null, odak: "", karne: null, det: null, detWait: false, detSec: null, detTr: false, final: null, bolum: 0, bolumSent: 0, finalHist: [], ipucu: null, ipucuAcik: false, trSoyle: null, micAnim: "", zamanAnlam: "", rol: null, tel: null, telYazi: false, telActi: 0, telBas: 0, kayitId: 0 });
 const S = Object.assign({ kelSec: "", silOnay: false, kat: 0, ayarAc: "", takip: false, kar: 0, seviye: "B1", finaller: [], damga: null, dk: { hal: "bos" }, yedek: null, yedekSonuc: null, screen: "home", mode: "sesli", cur: 0, stamped: [], speed: 1, noMic: false, seg: "serbest", phone: "iphone", dq: null, av: null, st: null, sq: 0, sPick: null, reveal: false, sBusy: false, sErr: "" }, fresh());
 const app = document.getElementById("app");
 const tip = document.getElementById("tip");
@@ -704,7 +741,7 @@ function say(text, lang, olay, ses) {
   speechSynthesis.speak(u);
 }
 function speak(text) {
-  if (quiet() || !hasTts) return;
+  if (quiet() || !hasTts || kayit) return; // kayıt sürerken okunan ses mikrofona karışmasın
   notice("");
   try {
     const lang = sc().lang, busy = speechSynthesis.speaking || speechSynthesis.pending;
@@ -738,26 +775,92 @@ function bestOpt(heard) {
   }
   return score >= 0.6 ? best : null;
 }
+// Android aynı cümleyi büyüyerek tekrar verir ("I", "I went"): önceki parçanın devamıysa yerine geçer.
+// shortcut: "no" + "no way" gibi gerçek tekrarda ilk söz düşer, şikâyet gelirse tarayıcıya göre ayrılır
+function sesBirlestir(parcalar) {
+  const l = [];
+  for (const p of parcalar) {
+    const t = p.trim(), son = l[l.length - 1];
+    if (!t) continue;
+    if (son && t.toLowerCase().startsWith(son.toLowerCase())) l[l.length - 1] = t;
+    else l.push(t);
+  }
+  return l.join(" ");
+}
+// Bas konuş, bas gönder: sessizlikte kapanmaz; tarayıcı dinlemeyi keserse yeniden açılır, söylenen korunur
+let kayit = null;
+const kayitMetni = k => [k.onceki, k.oturum].filter(Boolean).join(" ");
+function kayitSessiz(k) {
+  clearTimeout(k.sessizSaat);
+  k.sessiz = false;
+  const dalgaYaz = () => {
+    const d = document.getElementById("mic-dalga"), n = document.getElementById("mic-not");
+    if (d) d.classList.toggle("sakin", k.sessiz);
+    if (n) n.textContent = micNot(k);
+  };
+  dalgaYaz();
+  k.sessizSaat = setTimeout(() => { if (kayit === k) { k.sessiz = true; dalgaYaz(); } }, 2500);
+}
+const micNot = k => k.sessiz ? "Acele yok, mikrofon açık. Bitince bas." : k.tr ? "Bitince bas, kelimeler gelsin." : "Bitince bas, gönderilsin.";
+function kayitAc(lang, tr, bitince, koptu) {
+  if (kayit) return;
+  const k = kayit = { lang, tr, bitince, koptu, onceki: "", oturum: "", bitiyor: false, sessiz: false, ekran: S.screen };
+  S.listening = true;
+  try { speechSynthesis.cancel(); } catch (e) {}
+  render();
+  try { kayitBaslat(k); kayitSessiz(k); } catch (e) { kayitKoptu(k); }
+}
+function kayitBaslat(k) {
+  const r = k.r = new SR();
+  r.lang = k.lang; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+  r.onresult = e => {
+    if (kayit !== k) return;
+    k.oturum = sesBirlestir(Array.from(e.results, x => x[0].transcript));
+    const m = document.getElementById("mic-metin");
+    if (m) m.textContent = kayitMetni(k);
+    kayitSessiz(k);
+  };
+  r.onerror = e => { if (kayit === k && ["not-allowed", "service-not-allowed", "audio-capture", "network"].includes(e.error)) kayitKoptu(k); };
+  r.onend = () => {
+    if (kayit !== k) return;
+    k.onceki = kayitMetni(k); k.oturum = "";
+    if (k.bitiyor) return kayitTamam(k);
+    try { kayitBaslat(k); } catch (e) { kayitKoptu(k); }
+  };
+  r.start();
+}
+function kayitBirak(k) {
+  clearTimeout(k.sessizSaat); clearTimeout(k.bitisSaat);
+  kayit = null; S.listening = false; S.micAnim = "";
+  if (k.r) { k.r.onend = k.r.onerror = k.r.onresult = null; try { k.r.abort(); } catch (e) {} }
+}
+function kayitBitir() {
+  const k = kayit;
+  if (!k || k.bitiyor) return;
+  k.bitiyor = true;
+  if (!k.tr) { S.micAnim = "git"; render(); }
+  k.bitisSaat = setTimeout(() => { if (kayit === k) kayitTamam(k); }, 1500); // son sözün sonucu gelmezse elde olanla bitir
+  try { k.r.stop(); } catch (e) { kayitTamam(k); }
+}
+function kayitTamam(k) { const t = kayitMetni(k).trim(); kayitBirak(k); k.bitince(t); }
+function kayitKoptu(k) { const t = kayitMetni(k).trim(); kayitBirak(k); S.noMic = true; k.koptu(t); }
+function kayitIptal() { if (kayit) kayitBirak(kayit); }
+function micDugme(hazir) {
+  if (S.micAnim === "git") return `<div class="mic-row"><span class="mic gidiyor" role="img" aria-label="Gönderiliyor">${ICON.ucak}</span><p><b>Gönderiliyor</b></p></div>`;
+  if (S.micAnim === "tamam") return `<div class="mic-row"><span class="mic tamam" role="img" aria-label="Gitti">${ICON.tik}</span><p><b>Gitti</b></p></div>`;
+  if (kayit) return `<div class="duyulan" id="mic-metin" aria-live="polite">${esc(kayitMetni(kayit))}</div>
+    <div class="mic-row"><button class="mic dinliyor" data-mic-bitir aria-label="${kayit.tr ? "Bitirmek için bas" : "Göndermek için bas"}">${ICON.ucak}</button><p><b>${kayit.tr ? "Türkçe dinliyorum" : "Dinliyorum"} <span class="dalga ${kayit.sessiz ? "sakin" : ""}" id="mic-dalga"><i></i><i></i><i></i><i></i></span></b><span id="mic-not">${micNot(kayit)}</span></p></div>
+    <div class="alt-sira"><button class="chip" data-mic-vazgec>Vazgeç</button></div>`;
+  if (S.busy) return `<div class="mic-row"><span class="mic bekliyor" role="img" aria-label="Cevap bekleniyor">${ICON.mic}</span><p><b>Cevap bekleniyor</b></p></div>`;
+  return hazir;
+}
 function listen() {
   if (!SR || S.noMic) { S.ask = true; return render(); }
-  let r;
-  try { r = new SR(); } catch (e) { S.noMic = true; S.ask = true; return render(); }
-  r.lang = sc().lang; r.interimResults = false; r.maxAlternatives = 1;
-  r.onresult = e => {
-    S.listening = false;
-    const t = e.results[0][0].transcript.trim();
-    const o = bestOpt(t);
-    if (o) answer(o.t, o);
-    else { S.heard = t; S.ask = true; render(); }
-  };
-  r.onerror = e => {
-    S.listening = false;
-    if (["not-allowed", "service-not-allowed", "audio-capture", "network"].includes(e.error)) S.noMic = true;
-    S.ask = true; render();
-  };
-  r.onend = () => { if (S.listening) { S.listening = false; S.ask = true; render(); } };
-  S.listening = true; render();
-  try { speechSynthesis.cancel(); r.start(); } catch (e) { S.listening = false; S.noMic = true; S.ask = true; render(); }
+  kayitAc(sc().lang, false, t => {
+    const o = t ? bestOpt(t) : null;
+    if (o) return answer(o.t, o);
+    S.heard = t; S.ask = true; render();
+  }, t => { S.heard = t; S.ask = true; render(); });
 }
 
 function modeSwitch() {
@@ -872,12 +975,12 @@ function talk() {
     <form class="compose" data-send><input id="yaz" autocomplete="off" autocapitalize="sentences" placeholder="Type your answer…"><button type="submit">Gönder</button></form>
     <span class="label">Takıldıysan bir öneriye dokun</span>
     <div class="hints">${opts.map((o, i) => `<button class="chip" data-ans="${i}">${gloss(o.t)}</button>`).join("")}</div>`;
-  else if (S.listening) dock = `<div class="mic-row"><button class="mic listening" aria-label="Dinliyor">${ICON.mic}</button><p><b>Dinliyorum…</b> Cevabını şimdi söyle.</p></div>`;
+  else if (S.listening) dock = micDugme("");
   else if (S.ask) dock = `${S.heard ? `<span class="label">Duyduğum</span><div class="heard">${gloss(S.heard)}</div><button class="chip" data-send-heard>Bunu cevap olarak gönder</button>` : ""}
     <span class="label">${S.noMic || !SR ? "Cevabını sesli söyle, sonra burada seç" : S.heard ? "Ya da birini seç" : "Anlayamadım, birini seç"}</span>
     <div class="options">${opts.map((o, i) => `<button class="opt" data-ans="${i}">${gloss(o.t)}</button>`).join("")}</div>
     ${S.noMic || !SR ? "" : `<button class="chip" data-mic>${ICON.mic} Tekrar konuş</button>`}`;
-  else dock = `<div class="mic-row"><button class="mic" data-mic aria-label="Konuşmak için bas">${ICON.mic}</button><p>${S.noMic || !SR ? "Bu ekranda mikrofon açılamıyor. Cevabını sesli söyle, sonra düğmeye basıp seç." : "Bas ve cevabını sesli söyle."} Bilmediğin kelimenin üstüne gelince Türkçesi çıkar.</p></div>`;
+  else dock = `<div class="mic-row"><button class="mic" data-mic aria-label="Konuşmak için bas">${ICON.mic}</button><p>${S.noMic || !SR ? "Bu ekranda mikrofon açılamıyor. Cevabını sesli söyle, sonra düğmeye basıp seç." : "Bas, konuş, bitince tekrar bas."} Bilmediğin kelimenin üstüne gelince Türkçesi çıkar.</p></div>`;
   return `${head(0)}
     <div class="scene-head"><h3>${s.title}</h3><span class="label">${Math.min(S.turn + 1, s.dialog.length)} / ${s.dialog.length}</span></div>
     <div class="chat" id="chat">${bubbles}</div>
@@ -1081,6 +1184,32 @@ async function ipucuIste() {
     S.ipucu = { err: e.message }; render();
   }
 }
+const ZAMAN = [["Let me think…", "Bir düşüneyim…"], ["How can I put it…", "Nasıl desem…"], ["What I mean is…", "Demek istediğim şu…"], ["Give me a second.", "Bir saniye."], ["It's on the tip of my tongue.", "Dilimin ucunda."], ["What's the word…", "Neydi o kelime…"], ["In other words…", "Başka bir deyişle…"], ["Sorry, let me start again.", "Pardon, baştan başlayayım."], ["You know what I mean?", "Ne demek istediğimi anlıyor musun?"], ["I'm not sure how to say this.", "Bunu nasıl söyleyeceğimi bilemedim."], ["Well, the thing is…", "Şey, mesele şu ki…"], ["Let me say it differently.", "Başka türlü söyleyeyim."]];
+const zamanKazan = () => quiet() ? "" : `<div class="zaman"><span class="label">Zaman kazan</span><div class="serit">${ZAMAN.map((z, i) => `<button class="chip" data-zaman="${i}">${esc(z[0])}</button>`).join("")}</div><div class="zaman-anlam" id="zaman-anlam">${esc(S.zamanAnlam)}</div></div>`;
+// Türkçe söyle: ne diyeceğini Türkçe söyler, anahtar kelimeleri alır, cümleyi kendi kurar
+function trSoyleKart() {
+  const p = S.trSoyle;
+  if (!p) return "";
+  const kapa = `<div class="alt-sira"><button class="chip" data-tr-kapa>Kapat</button></div>`;
+  if (p.yaz) return `<div class="tr-kart"><label class="label" for="tr-yaz">Ne demek istediğini Türkçe yaz</label><form class="compose" id="tr-form"><input id="tr-yaz" autocomplete="off" autocapitalize="sentences" value="${esc(p.metin || "")}"><button type="submit">Getir</button></form>${kapa}</div>`;
+  if (p.bekle) return `<p class="typing" style="margin:0">Kelimeler hazırlanıyor…</p>`;
+  if (p.err) return `<div class="tr-kart"><div class="err" role="alert">${esc(p.err)}</div>${sinirEk(p.err)}${kapa}</div>`;
+  return `<div class="tr-kart"><span class="label">Bu kelimelerle kendin söyle</span>
+    <div class="kelimeler">${p.kelimeler.map(([en, tr]) => `<span class="kelime"><b>${esc(en)}</b><small>${esc(tr)}</small></span>`).join("")}</div>
+    ${p.acik ? `<div class="dogal">${gloss(p.dogal)}</div>` : `<div class="alt-sira"><button class="chip" data-tr-dogal>Doğal hâlini göster</button></div>`}${kapa}</div>`;
+}
+async function trSoyleIste(metin) {
+  const sira = S.hist.length;
+  S.trSoyle = { bekle: true }; render();
+  try {
+    const p = await SOHBET.trSoyle(anahtar(), S.hist, metin);
+    if (S.hist.length !== sira || S.screen !== "sohbet" || !S.trSoyle) return; // bu arada mesaj gönderildiyse ya da kapatıldıysa eskidi
+    S.trSoyle = p; render();
+  } catch (e) {
+    if (S.hist.length !== sira || S.screen !== "sohbet" || !S.trSoyle) return;
+    S.trSoyle = { err: e.message }; render();
+  }
+}
 function kaliplar() {
   const k = KALIPLAR[S.kat];
   return `${backBtn}<div class="hub-title"><span class="label">Sık kalıplar · internetsiz açılır</span><h2>Konuşmayı kurtaran cümleler</h2></div>
@@ -1192,9 +1321,9 @@ function telefon() {
     ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${sinirEk(S.err)}${S.hist.length === 1 ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip back" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
     <div class="msg-tools" style="flex-wrap:wrap">${son ? `<button class="chip" data-tel-tekrar>${ICON.play} Tekrar söyle</button><button class="chip" data-tel-yazi>${S.telYazi ? "Yazıyı gizle" : "Yazıyı göster"}</button>` : ""}</div>
     <span class="label">Okuma hızı</span>${hizSec()}
-    <div class="dock">${S.listening ? `<div class="mic-row"><button class="mic listening" aria-label="Dinliyor">${ICON.mic}</button><p><b>Dinliyorum…</b></p></div>`
+    <div class="dock">${S.listening || S.micAnim ? micDugme("") + zamanKazan()
       : yazili ? `<p class="muted" style="margin:0">Bu cihazda mikrofon açılamıyor, cevabını yaz.</p><form class="compose" id="serbest-form"><input id="serbest" autocomplete="off" aria-label="Cevabın" placeholder="Type your answer…" value="${esc(S.draft)}"><button type="submit">Gönder</button></form>`
-      : `<div class="mic-row"><button class="mic" data-free-mic ${S.busy ? "disabled" : ""} aria-label="Konuşmak için bas">${ICON.mic}</button><p>Bas ve cevabını söyle.</p></div>`}</div>
+      : micDugme(`<div class="mic-row"><button class="mic" data-free-mic aria-label="Konuşmak için bas">${ICON.mic}</button><p><b>Bas ve konuş</b>Bitince tekrar bas, gönderilir.</p></div>`) + zamanKazan()}</div>
     <button class="btn ghost" data-tel-bitir>Görüşmeyi bitir</button>`;
 }
 function telSon() {
@@ -1413,18 +1542,16 @@ function sohbet() {
       <div class="msg-tools">${quiet() ? "" : `<button class="chip" data-say="${i}">${ICON.play} Dinle</button>`}${m.tr ? `<button class="chip" data-tr="${i}">Türkçesi</button>` : ""}</div>
       ${S.tr[i] ? `<div class="tr">${esc(m.tr)}</div>` : ""}</div>`;
   }).join("");
-  const mic = quiet() ? "" : S.listening
-    ? `<div class="mic-row"><button class="mic listening" aria-label="Dinliyor">${ICON.mic}</button><p><b>Dinliyorum…</b> Şimdi söyle.</p></div>`
-    : `<div class="mic-row"><button class="mic" data-free-mic aria-label="Konuşmak için bas">${ICON.mic}</button><p>${S.noMic || !SR ? "Bu ekranda mikrofon açılamıyor, yazarak devam et." : "Bas ve söyle ya da aşağıya yaz."}</p></div>`;
+  const mic = quiet() ? "" : micDugme(`<div class="mic-row"><button class="mic" data-free-mic aria-label="Konuşmak için bas">${ICON.mic}</button><p>${S.noMic || !SR ? "Bu ekranda mikrofon açılamıyor, yazarak devam et." : "<b>Bas ve konuş</b>Bitince tekrar bas, gönderilir. İstersen aşağıya yaz."}</p></div>`) + zamanKazan();
   return `<div class="top">${backBtn}<button class="chip" data-mode="${quiet() ? "sesli" : "sessiz"}">${quiet() ? ICON.mute + " Sessiz" : ICON.sound + " Sesli"}</button></div>
     <div class="scene-head"><h3>${esc(S.det ? S.det.baslik : S.topic)}</h3>${S.final !== null ? `<span class="label">Bölüm ${S.bolum + 1} / 3</span>` : S.detWait || S.det ? `<span class="label">${S.sent} / ${DET_SORU} soru</span>` : `<button class="chip" data-go="sohbetSon">${karneli() && S.sent ? "Karneyi gör" : "Sohbeti bitir"}</button>`}</div>
     ${S.det ? `<section class="case"><span class="label">Dosya</span><p>${gloss(S.det.olay)}</p>${S.det.olayTr ? `<button class="chip" data-det-tr>Türkçesi</button>${S.detTr ? `<p class="tr" style="color:inherit">${esc(S.det.olayTr)}</p>` : ""}` : ""}</section>` : ""}
     <div class="chat" id="chat">${bubbles}${S.busy ? `<div class="typing">${S.detWait ? "Dosya hazırlanıyor…" : "yazıyor…"}</div>` : ""}</div>
     ${S.err ? `<div class="err" role="alert">${esc(S.err)}</div>${sinirEk(S.err)}${S.detWait || (S.hist.length === 1 && !S.det) ? `<button class="btn" data-free-retry>Tekrar dene</button>` : ""}${/Anahtar/.test(S.err) ? `<button class="chip" data-key-del>Anahtarı değiştir</button>` : ""}` : ""}
     ${S.final !== null && S.bolumSent >= FINAL_MESAJ ? (S.busy ? "" : S.bolum < 2 ? `<button class="btn" data-final-next>Sonraki bölüm: ${esc(BOLGELER[S.final].final.bolumler[S.bolum + 1].who)}</button>` : `<button class="btn" data-go="sohbetSon">Finali bitir ve karneni gör</button>`)
-      : S.detWait ? "" : S.det && S.sent >= DET_SORU ? `<p class="muted">Soru hakkın bitti, kararını ver.</p>` : `<div class="dock">${ipucuKart()}${mic}
+      : S.detWait ? "" : S.det && S.sent >= DET_SORU ? `<p class="muted">Soru hakkın bitti, kararını ver.</p>` : `<div class="dock">${ipucuKart()}${trSoyleKart()}${mic}
       <form class="compose" id="serbest-form"><input id="serbest" autocomplete="off" autocapitalize="sentences" aria-label="Mesajın" placeholder="${S.det ? "Ask a question…" : "Type your message…"}" value="${esc(S.draft)}"><button type="submit">Gönder</button></form>
-      ${S.det || !S.chat.length || S.busy || (S.ipucu && !S.ipucu.err) ? "" : `<button class="chip back" data-ipucu>Takıldım</button>`}
+      ${!S.chat.length || S.busy || S.listening ? "" : `<div class="alt-sira">${S.trSoyle ? "" : `<button class="chip" data-tr-soyle>Türkçe söyle</button>`}${S.det || (S.ipucu && !S.ipucu.err) ? "" : `<button class="chip" data-ipucu>Takıldım</button>`}</div>`}
     </div>`}
     ${S.det ? `<div class="card"><span class="label">Çözdüm: suçlu kim?</span><div class="hints">${S.det.supheliler.map((n, i) => `<button class="chip" data-verdict="${i}" ${S.busy ? "disabled" : ""}>${gloss(n)}</button>`).join("")}</div></div>` : ""}`;
 }
@@ -1496,7 +1623,7 @@ function serbestBasla(topic, ek) {
 function serbestGonder(t) {
   if (S.busy || !t.trim() || (S.det && S.sent >= DET_SORU) || (S.final !== null && S.bolumSent >= FINAL_MESAJ)) return;
   if (S.final !== null) S.bolumSent++;
-  S.ipucu = null;
+  S.ipucu = null; S.trSoyle = null;
   t = t.trim();
   if (!S.sent) { DF.chats++; dfYaz(); }
   S.chat.push({ you: true, t }); S.hist.push({ role: "user", text: t }); S.sent++; S.draft = "";
@@ -1504,18 +1631,16 @@ function serbestGonder(t) {
 }
 function serbestDinle() {
   if (!SR || S.noMic) { S.noMic = true; return render(); }
-  let r;
-  try { r = new SR(); } catch (e) { S.noMic = true; return render(); }
-  r.lang = "en-US"; r.interimResults = false; r.maxAlternatives = 1;
-  r.onresult = e => { S.listening = false; serbestGonder(e.results[0][0].transcript); };
-  r.onerror = e => {
-    S.listening = false;
-    if (["not-allowed", "service-not-allowed", "audio-capture", "network"].includes(e.error)) S.noMic = true;
-    render();
-  };
-  r.onend = () => { if (S.listening) { S.listening = false; render(); } };
-  S.listening = true; render();
-  try { speechSynthesis.cancel(); r.start(); } catch (e) { S.listening = false; S.noMic = true; render(); }
+  kayitAc("en-US", false, t => {
+    if (!t) return render();
+    S.micAnim = "tamam";
+    setTimeout(() => { if (S.micAnim === "tamam") { S.micAnim = ""; render(); } }, 650);
+    serbestGonder(t);
+  }, t => { if (t) S.draft = t; render(); }); // mikrofon koparsa söylenen yazı kutusunda kalır
+}
+function trDinle() {
+  if (quiet() || !SR || S.noMic) { S.trSoyle = { yaz: true }; return render(); }
+  kayitAc("tr-TR", true, t => { if (t) trSoyleIste(t); else render(); }, t => { S.trSoyle = { yaz: true, metin: t }; render(); });
 }
 
 const SCREENS = { home, talk, talkEnd, ear, words, finish, konus, sohbet, sohbetSon, defter, av, dinle, hikaye, detSon, dakika, roller, telefon, telSon, pasaportum, ayarlar, zorlar, sonsohbet, kaliplar };
@@ -1530,6 +1655,7 @@ const NAV_SEKME = { home: "home", konus: "konus", sohbetSon: "konus", detSon: "k
 const nav = document.getElementById("nav");
 function render() {
   hideTip();
+  if (kayit && (kayit.ekran !== S.screen || quiet() || !S.listening)) kayitIptal(); // ekrandan çıkınca mikrofon açık kalmasın
   app.innerHTML = SCREENS[S.screen]() + damgaKatman();
   const sekme = (S.screen === "dakika" && S.dk.hal === "akis") || (S.screen === "telefon" && S.tel !== null) ? null : NAV_SEKME[S.screen]; // süre işlerken menüyle çıkılmasın
   nav.hidden = !sekme;
@@ -1566,6 +1692,7 @@ addEventListener("scroll", hideTip, { passive: true });
 app.addEventListener("submit", e => {
   e.preventDefault();
   if (e.target.id === "serbest-form") return serbestGonder(document.getElementById("serbest").value);
+  if (e.target.id === "tr-form") { const k = document.getElementById("tr-yaz").value.trim(); if (k) trSoyleIste(k); return; }
   if (e.target.id === "konu-form") { const k = document.getElementById("konu").value.trim(); if (k) serbestBasla(k); return; }
   if (e.target.id === "anahtar-form") { const k = document.getElementById("anahtar").value.trim(); if (k) { anahtarYaz(k); render(); } return; }
   if (e.target.id === "anlam-form") { DEFTER.kelimeAnlam(DF, S.kelSec, document.getElementById("anlam").value); DICT[S.kelSec] = DF.words[S.kelSec].tr; dfYaz(); S.dq = null; S.kelSec = ""; return render(); }
@@ -1609,6 +1736,12 @@ app.addEventListener("click", e => {
     return;
   }
   if ("damgaKapa" in d) { S.damga = null; return render(); }
+  if ("micBitir" in d) return kayitBitir();
+  if ("micVazgec" in d) { kayitIptal(); return render(); }
+  if (d.zaman) { S.zamanAnlam = ZAMAN[+d.zaman][1]; document.getElementById("zaman-anlam").textContent = S.zamanAnlam; return; } // şerit kaymasın diye yeniden çizilmez
+  if ("trSoyle" in d) return trDinle();
+  if ("trDogal" in d) { S.trSoyle.acik = true; return render(); }
+  if ("trKapa" in d) { S.trSoyle = null; return render(); }
   if ("ipucu" in d) return ipucuIste();
   if ("ipucuOrnek" in d) { S.ipucuAcik = true; return render(); }
   if (d.kel) { S.kelSec = S.kelSec === d.kel ? "" : d.kel; return render(); }
