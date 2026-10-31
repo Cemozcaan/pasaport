@@ -54,6 +54,12 @@ assert.strictEqual(pickVoice([tr, us], "en-GB"), us);
 assert.strictEqual(pickVoice([tr, us, gb], "en-IE"), gb);
 assert.strictEqual(pickVoice([tr, us, au], "en-AU"), au);
 assert.strictEqual(pickVoice([us, gus], "en-US"), gus);
+// Seçilen ses aksanın önüne geçer; cihazda yoksa ya da Türkçeyse aksan sırasına dönülür
+const secim = { ...us, voiceURI: "z" }, trSecim = { ...tr, voiceURI: "t" };
+assert.strictEqual(pickVoice([gb, secim], "en-GB", "z"), secim);
+assert.strictEqual(pickVoice([gb, secim], "en-GB", "yok"), gb);
+assert.strictEqual(pickVoice([gb, trSecim], "en-GB", "t"), gb);
+assert.strictEqual(pickVoice([gb, secim], "en-GB", ""), gb);
 
 // Serbest Sohbet: yapay zekâ cevabının çözümü, geçmiş sınırı, hata mesajları
 const SOHBET = vm.runInContext("SOHBET", ctx);
